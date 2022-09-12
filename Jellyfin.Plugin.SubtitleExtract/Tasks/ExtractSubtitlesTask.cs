@@ -14,6 +14,7 @@ using MediaBrowser.Model.Entities;
 using MediaBrowser.Model.Globalization;
 using MediaBrowser.Model.MediaInfo;
 using MediaBrowser.Model.Tasks;
+using Microsoft.Extensions.Logging;
 
 namespace Jellyfin.Plugin.SubtitleExtract.Tasks;
 
@@ -27,6 +28,8 @@ public class ExtractSubtitlesTask : IScheduledTask
     private readonly ILibraryManager _libraryManager;
     private readonly ISubtitleEncoder _subtitleEncoder;
     private readonly ILocalizationManager _localization;
+    private readonly ILogger<ExtractSubtitlesTask> _logger;
+
     private static readonly BaseItemKind[] _itemTypes = { BaseItemKind.Episode, BaseItemKind.Movie };
     private static readonly string[] _supportedFormats = { SubtitleFormat.SRT, SubtitleFormat.ASS, SubtitleFormat.SSA };
     private static readonly string[] _mediaTypes = { MediaType.Video };
@@ -39,14 +42,17 @@ public class ExtractSubtitlesTask : IScheduledTask
     /// <param name="libraryManager">Instance of <see cref="ILibraryManager"/> interface.</param>
     /// /// <param name="subtitleEncoder">Instance of <see cref="ISubtitleEncoder"/> interface.</param>
     /// <param name="localization">Instance of <see cref="ILocalizationManager"/> interface.</param>
+    /// <param name="logger">Instance of the <see cref="ILogger{ExtractSubtitlesTask}"/> interface.</param>
     public ExtractSubtitlesTask(
         ILibraryManager libraryManager,
         ISubtitleEncoder subtitleEncoder,
-        ILocalizationManager localization)
+        ILocalizationManager localization,
+        ILogger<ExtractSubtitlesTask> logger)
     {
         _libraryManager = libraryManager;
         _subtitleEncoder = subtitleEncoder;
         _localization = localization;
+        _logger = logger;
     }
 
     /// <inheritdoc />
@@ -93,23 +99,42 @@ public class ExtractSubtitlesTask : IScheduledTask
             {
                 cancellationToken.ThrowIfCancellationRequested();
 
-                var mediaSourceId = video.Id.ToString("N", CultureInfo.InvariantCulture);
-                var streams = video.GetMediaStreams()
-                    .Where(stream => stream.IsTextSubtitleStream
-                                     && stream.SupportsExternalStream
-                                     && !stream.IsExternal);
-                foreach (var stream in streams)
+                try
                 {
-                    var index = stream.Index;
-                    var format = stream.Codec;
-
-                    // SubtitleEncoder has readers only for these formats, everything else converted to SRT.
-                    if (!_supportedFormats.Contains(format, StringComparison.OrdinalIgnoreCase))
+                    var mediaSourceId = video.Id.ToString("N", CultureInfo.InvariantCulture);
+                    var streams = video.GetMediaStreams()
+                        .Where(stream => stream.IsTextSubtitleStream
+                                         && stream.SupportsExternalStream
+                                         && !stream.IsExternal);
+                    foreach (var stream in streams)
                     {
-                        format = SubtitleFormat.SRT;
-                    }
+                        var index = stream.Index;
+                        var format = stream.Codec;
 
-                    await _subtitleEncoder.GetSubtitles(video, mediaSourceId, index, format, 0, 0, false, cancellationToken).ConfigureAwait(false);
+                        try
+                        {
+                            // SubtitleEncoder has readers only for these formats, everything else converted to SRT.
+                            if (!_supportedFormats.Contains(format, StringComparison.OrdinalIgnoreCase))
+                            {
+                                format = SubtitleFormat.SRT;
+                            }
+
+                            await _subtitleEncoder.GetSubtitles(video, mediaSourceId, index, format, 0, 0, false, cancellationToken).ConfigureAwait(false);
+                        }
+                        catch (Exception ex)
+                        {
+                            _logger.LogWarning(
+                                ex,
+                                "Unable to extract subtitle File:{File}\tStreamIndex:{Index}\tCodec:{Codec}",
+                                video.Path,
+                                index,
+                                format);
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Unable to get streams for File:{File}", video.Path);
                 }
 
                 completedVideos++;
