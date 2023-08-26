@@ -1,4 +1,4 @@
-﻿using MediaBrowser.Model.Plugins;
+using MediaBrowser.Model.Plugins;
 
 namespace Jellyfin.Plugin.SubtitleExtract.Configuration;
 
@@ -24,7 +24,7 @@ public class PluginConfiguration : BasePluginConfiguration
     /// Gets or sets a value indicating whether the behavior for the metadata provider used on library scan/update.
     /// true - starts extraction and wait for extration to finish.
     /// false - starts extraction and continue.
-    /// default = NonBlocking.
+    /// default = false.
     /// </summary>
     public bool WaitExtraction { get; set; } = false;
 }

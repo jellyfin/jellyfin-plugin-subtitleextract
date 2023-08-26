@@ -30,7 +30,6 @@ namespace Jellyfin.Plugin.SubtitleExtract.Providers
             _subtitleEncoder = subtitleEncoder;
             _logger = logger;
             _loggerFactory = loggerFactory;
-            _logger.LogInformation("Provider instanciado");
         }
 
         /// <inheritdoc />
@@ -39,11 +38,10 @@ namespace Jellyfin.Plugin.SubtitleExtract.Providers
         /// <summary>
         /// Gets the order in which the provider should be called. (Core provider is = 100).
         /// </summary>
-        public int Order => 900;
+        public int Order => 1000;
 
         public bool HasChanged(BaseItem item, IDirectoryService directoryService)
         {
-            _logger.LogInformation("Provider comprobando cambios");
             if (item.IsFileProtocol)
             {
                 var file = directoryService.GetFile(item.Path);
@@ -58,33 +56,27 @@ namespace Jellyfin.Plugin.SubtitleExtract.Providers
 
         public Task<ItemUpdateType> FetchAsync(Episode item, MetadataRefreshOptions options, CancellationToken cancellationToken)
         {
-            _logger.LogInformation("Provider recibe episodio");
             return FetchSubtitles(item, cancellationToken);
         }
 
         public Task<ItemUpdateType> FetchAsync(Movie item, MetadataRefreshOptions options, CancellationToken cancellationToken)
         {
-            _logger.LogInformation("Provider recibe peli");
             return FetchSubtitles(item, cancellationToken);
         }
 
         public Task<ItemUpdateType> FetchAsync(Video item, MetadataRefreshOptions options, CancellationToken cancellationToken)
         {
-            _logger.LogInformation("Provider recibe video");
             return FetchSubtitles(item, cancellationToken);
         }
 
         private async Task<ItemUpdateType> FetchSubtitles(BaseItem item, CancellationToken cancellationToken)
         {
-            _logger.LogInformation("Provider empieza a trabajar");
             var config = SubtitleExtractPlugin.Current!.Configuration;
-
-            _logger.LogInformation("Config cargada: {Extract} y {Wait}", config.ExtractionDuringLibraryScan, config.WaitExtraction);
 
             if (config.ExtractionDuringLibraryScan)
             {
                 var extractor = new SubtitlesExtractor(_loggerFactory.CreateLogger<SubtitlesExtractor>(), _subtitleEncoder);
-                _logger.LogInformation("Provider extrayendo para {Video}", item);
+                _logger.LogInformation("Extracting subtitles for: {Video}", item);
 
                 if (config.WaitExtraction)
                 {
@@ -94,6 +86,8 @@ namespace Jellyfin.Plugin.SubtitleExtract.Providers
                 {
                     await extractor.Run(item, cancellationToken).ConfigureAwait(false);
                 }
+
+                _logger.LogInformation("Finished subtitle extraction for: {Video}", item);
             }
 
             return ItemUpdateType.None;
