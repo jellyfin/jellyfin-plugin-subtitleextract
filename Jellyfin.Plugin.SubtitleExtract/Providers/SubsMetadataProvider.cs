@@ -11,7 +11,10 @@ using Microsoft.Extensions.Logging;
 
 namespace Jellyfin.Plugin.SubtitleExtract.Providers
 {
-    internal class SubsMetadataProvider : ICustomMetadataProvider<Episode>,
+    /// <summary>
+    /// Extracts embedded subtitles while library scanning for immediate access in web player.
+    /// </summary>
+    public class SubsMetadataProvider : ICustomMetadataProvider<Episode>,
         ICustomMetadataProvider<Movie>,
         ICustomMetadataProvider<Video>,
         IHasItemChangeMonitor,
@@ -22,6 +25,12 @@ namespace Jellyfin.Plugin.SubtitleExtract.Providers
         private readonly ILoggerFactory _loggerFactory;
         private readonly ILogger<SubsMetadataProvider> _logger;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="SubsMetadataProvider"/> class.
+        /// </summary>
+        /// <param name="subtitleEncoder">Instance of the <see cref="ISubtitleEncoder"/> interface.</param>
+        /// <param name="loggerFactory">Instance of the <see cref="ILoggerFactory"/> interface.</param>
+        /// <param name="logger">Instance of the <see cref="ILogger"/> interface.</param>
         public SubsMetadataProvider(
             ISubtitleEncoder subtitleEncoder,
             ILoggerFactory loggerFactory,
@@ -40,6 +49,7 @@ namespace Jellyfin.Plugin.SubtitleExtract.Providers
         /// </summary>
         public int Order => 1000;
 
+        /// <inheritdoc/>
         public bool HasChanged(BaseItem item, IDirectoryService directoryService)
         {
             if (item.IsFileProtocol)
@@ -54,16 +64,19 @@ namespace Jellyfin.Plugin.SubtitleExtract.Providers
             return false;
         }
 
+        /// <inheritdoc/>
         public Task<ItemUpdateType> FetchAsync(Episode item, MetadataRefreshOptions options, CancellationToken cancellationToken)
         {
             return FetchSubtitles(item, cancellationToken);
         }
 
+        /// <inheritdoc/>
         public Task<ItemUpdateType> FetchAsync(Movie item, MetadataRefreshOptions options, CancellationToken cancellationToken)
         {
             return FetchSubtitles(item, cancellationToken);
         }
 
+        /// <inheritdoc/>
         public Task<ItemUpdateType> FetchAsync(Video item, MetadataRefreshOptions options, CancellationToken cancellationToken)
         {
             return FetchSubtitles(item, cancellationToken);

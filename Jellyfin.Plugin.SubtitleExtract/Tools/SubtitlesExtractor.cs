@@ -24,8 +24,8 @@ namespace Jellyfin.Plugin.SubtitleExtract.Tools
         /// <summary>
         /// Initializes a new instance of the <see cref="SubtitlesExtractor"/> class.
         /// </summary>
-        /// <param name="logger">Logger class.</param>
-        /// <param name="subtitleEncoder">Subtitles encoder..</param>
+        /// <param name="logger">Instance of the <see cref="ILogger"/> interface.</param>
+        /// <param name="subtitleEncoder">Instance of the <see cref="ISubtitleEncoder"/> interface.</param>
         public SubtitlesExtractor(
             ILogger<SubtitlesExtractor> logger,
             ISubtitleEncoder subtitleEncoder)
