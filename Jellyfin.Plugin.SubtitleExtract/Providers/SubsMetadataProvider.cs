@@ -94,14 +94,7 @@ namespace Jellyfin.Plugin.SubtitleExtract.Providers
             {
                 _logger.LogInformation("Extracting subtitles for: {Video}", item.Path);
 
-                if (config.WaitExtraction)
-                {
-                    _ = _extractor.Run(item, cancellationToken).ConfigureAwait(false);
-                }
-                else
-                {
-                    await _extractor.Run(item, cancellationToken).ConfigureAwait(false);
-                }
+                await _extractor.Run(item, cancellationToken).ConfigureAwait(false);
 
                 _logger.LogInformation("Finished subtitle extraction for: {Video}", item.Path);
             }

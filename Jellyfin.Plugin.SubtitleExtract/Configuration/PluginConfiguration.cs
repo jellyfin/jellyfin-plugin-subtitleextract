@@ -16,15 +16,7 @@ public class PluginConfiguration : BasePluginConfiguration
 
     /// <summary>
     /// Gets or sets a value indicating whether or not to extract subtitles as part of library scan.
-    /// default = true.
-    /// </summary>
-    public bool ExtractionDuringLibraryScan { get; set; } = true;
-
-    /// <summary>
-    /// Gets or sets a value indicating whether the behavior for the metadata provider used on library scan/update.
-    /// true - starts extraction and wait for extration to finish.
-    /// false - starts extraction and continue.
     /// default = false.
     /// </summary>
-    public bool WaitExtraction { get; set; } = false;
+    public bool ExtractionDuringLibraryScan { get; set; } = false;
 }
