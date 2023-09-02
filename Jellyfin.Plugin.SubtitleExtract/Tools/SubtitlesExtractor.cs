@@ -62,7 +62,7 @@ namespace Jellyfin.Plugin.SubtitleExtract.Tools
                             format = SubtitleFormat.SRT;
                         }
 
-                        _logger.LogInformation("Extracting subtitle stream {Index} from {Video} as {Format}", index, video, format);
+                        _logger.LogInformation("Extracting subtitle stream {Index} from {Video} as {Format}", index, video.Path, format);
 
                         await _subtitleEncoder.GetSubtitles(video, mediaSourceId, index, format, 0, 0, false, cancellationToken).ConfigureAwait(false);
                     }

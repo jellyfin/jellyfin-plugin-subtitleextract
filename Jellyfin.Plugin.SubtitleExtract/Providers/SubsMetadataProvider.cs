@@ -25,6 +25,8 @@ namespace Jellyfin.Plugin.SubtitleExtract.Providers
         private readonly ILoggerFactory _loggerFactory;
         private readonly ILogger<SubsMetadataProvider> _logger;
 
+        private readonly SubtitlesExtractor _extractor;
+
         /// <summary>
         /// Initializes a new instance of the <see cref="SubsMetadataProvider"/> class.
         /// </summary>
@@ -39,6 +41,8 @@ namespace Jellyfin.Plugin.SubtitleExtract.Providers
             _subtitleEncoder = subtitleEncoder;
             _logger = logger;
             _loggerFactory = loggerFactory;
+
+            _extractor = new SubtitlesExtractor(_loggerFactory.CreateLogger<SubtitlesExtractor>(), _subtitleEncoder);
         }
 
         /// <inheritdoc />
@@ -88,19 +92,18 @@ namespace Jellyfin.Plugin.SubtitleExtract.Providers
 
             if (config.ExtractionDuringLibraryScan)
             {
-                var extractor = new SubtitlesExtractor(_loggerFactory.CreateLogger<SubtitlesExtractor>(), _subtitleEncoder);
-                _logger.LogInformation("Extracting subtitles for: {Video}", item);
+                _logger.LogInformation("Extracting subtitles for: {Video}", item.Path);
 
                 if (config.WaitExtraction)
                 {
-                    _ = extractor.Run(item, cancellationToken).ConfigureAwait(false);
+                    _ = _extractor.Run(item, cancellationToken).ConfigureAwait(false);
                 }
                 else
                 {
-                    await extractor.Run(item, cancellationToken).ConfigureAwait(false);
+                    await _extractor.Run(item, cancellationToken).ConfigureAwait(false);
                 }
 
-                _logger.LogInformation("Finished subtitle extraction for: {Video}", item);
+                _logger.LogInformation("Finished subtitle extraction for: {Video}", item.Path);
             }
 
             return ItemUpdateType.None;

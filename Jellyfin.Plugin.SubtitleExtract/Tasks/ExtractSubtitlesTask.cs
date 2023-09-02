@@ -33,6 +33,8 @@ public class ExtractSubtitlesTask : IScheduledTask
     private static readonly SourceType[] _sourceTypes = { SourceType.Library };
     private static readonly DtoOptions _dtoOptions = new(false);
 
+    private readonly SubtitlesExtractor _extractor;
+
     /// <summary>
     /// Initializes a new instance of the <see cref="ExtractSubtitlesTask" /> class.
     /// </summary>
@@ -50,6 +52,7 @@ public class ExtractSubtitlesTask : IScheduledTask
         _subtitleEncoder = subtitleEncoder;
         _localization = localization;
         _loggerFactory = loggerFactory;
+        _extractor = new SubtitlesExtractor(_loggerFactory.CreateLogger<SubtitlesExtractor>(), _subtitleEncoder);
     }
 
     /// <inheritdoc />
@@ -87,8 +90,6 @@ public class ExtractSubtitlesTask : IScheduledTask
         var startIndex = 0;
         var completedVideos = 0;
 
-        var extractor = new SubtitlesExtractor(_loggerFactory.CreateLogger<SubtitlesExtractor>(), _subtitleEncoder);
-
         while (startIndex < numberOfVideos)
         {
             query.StartIndex = startIndex;
@@ -98,7 +99,7 @@ public class ExtractSubtitlesTask : IScheduledTask
             {
                 cancellationToken.ThrowIfCancellationRequested();
 
-                await extractor.Run(video, cancellationToken).ConfigureAwait(false);
+                await _extractor.Run(video, cancellationToken).ConfigureAwait(false);
 
                 completedVideos++;
                 progress.Report(100d * completedVideos / numberOfVideos);
