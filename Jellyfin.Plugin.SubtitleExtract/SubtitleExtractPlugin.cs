@@ -28,7 +28,7 @@ public class SubtitleExtractPlugin : BasePlugin<PluginConfiguration>, IHasWebPag
     public override string Name => "Subtitle Extract";
 
     /// <inheritdoc />
-    public override Guid Id => Guid.Parse("CD893C24-B59E-4060-87B2-184070E1BF68");
+    public override Guid Id => new("CD893C24-B59E-4060-87B2-184070E1BF68");
 
     /// <inheritdoc />
     public override string Description => "Extracts embedded subtitles";
@@ -36,7 +36,7 @@ public class SubtitleExtractPlugin : BasePlugin<PluginConfiguration>, IHasWebPag
     /// <summary>
     /// Gets the current plugin instance.
     /// </summary>
-    public static SubtitleExtractPlugin? Current { get; private set; }
+    public static SubtitleExtractPlugin Current { get; private set; } = null!;
 
     /// <inheritdoc />
     public IEnumerable<PluginPageInfo> GetPages()
