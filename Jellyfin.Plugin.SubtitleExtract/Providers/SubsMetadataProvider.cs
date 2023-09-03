@@ -44,7 +44,7 @@ namespace Jellyfin.Plugin.SubtitleExtract.Providers
         }
 
         /// <inheritdoc />
-        public string Name => "Jellyfin Subtitle Extractor";
+        public string Name => SubtitleExtractPlugin.Current.Name;
 
         /// <summary>
         /// Gets the order in which the provider should be called. (Core provider is = 100).
