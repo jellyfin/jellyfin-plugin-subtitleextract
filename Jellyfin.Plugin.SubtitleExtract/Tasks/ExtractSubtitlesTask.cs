@@ -26,7 +26,6 @@ public class ExtractSubtitlesTask : IScheduledTask
     private readonly ILibraryManager _libraryManager;
     private readonly ISubtitleEncoder _subtitleEncoder;
     private readonly ILocalizationManager _localization;
-    private readonly ILoggerFactory _loggerFactory;
 
     private static readonly BaseItemKind[] _itemTypes = { BaseItemKind.Episode, BaseItemKind.Movie };
     private static readonly string[] _mediaTypes = { MediaType.Video };
@@ -51,8 +50,7 @@ public class ExtractSubtitlesTask : IScheduledTask
         _libraryManager = libraryManager;
         _subtitleEncoder = subtitleEncoder;
         _localization = localization;
-        _loggerFactory = loggerFactory;
-        _extractor = new SubtitlesExtractor(_loggerFactory.CreateLogger<SubtitlesExtractor>(), _subtitleEncoder);
+        _extractor = new SubtitlesExtractor(loggerFactory.CreateLogger<SubtitlesExtractor>(), _subtitleEncoder);
     }
 
     /// <inheritdoc />

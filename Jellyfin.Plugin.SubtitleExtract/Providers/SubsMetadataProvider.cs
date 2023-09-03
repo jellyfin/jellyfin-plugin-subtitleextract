@@ -22,7 +22,6 @@ namespace Jellyfin.Plugin.SubtitleExtract.Providers
         IForcedProvider
     {
         private readonly ISubtitleEncoder _subtitleEncoder;
-        private readonly ILoggerFactory _loggerFactory;
         private readonly ILogger<SubsMetadataProvider> _logger;
 
         private readonly SubtitlesExtractor _extractor;
@@ -40,9 +39,8 @@ namespace Jellyfin.Plugin.SubtitleExtract.Providers
         {
             _subtitleEncoder = subtitleEncoder;
             _logger = logger;
-            _loggerFactory = loggerFactory;
 
-            _extractor = new SubtitlesExtractor(_loggerFactory.CreateLogger<SubtitlesExtractor>(), _subtitleEncoder);
+            _extractor = new SubtitlesExtractor(loggerFactory.CreateLogger<SubtitlesExtractor>(), _subtitleEncoder);
         }
 
         /// <inheritdoc />
