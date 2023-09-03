@@ -1,7 +1,9 @@
 using System;
+using System.Collections.Generic;
 using Jellyfin.Plugin.SubtitleExtract.Configuration;
 using MediaBrowser.Common.Configuration;
 using MediaBrowser.Common.Plugins;
+using MediaBrowser.Model.Plugins;
 using MediaBrowser.Model.Serialization;
 
 namespace Jellyfin.Plugin.SubtitleExtract;
@@ -9,7 +11,7 @@ namespace Jellyfin.Plugin.SubtitleExtract;
 /// <summary>
 /// Plugin entrypoint.
 /// </summary>
-public class SubtitleExtractPlugin : BasePlugin<PluginConfiguration>
+public class SubtitleExtractPlugin : BasePlugin<PluginConfiguration>, IHasWebPages
 {
     /// <summary>
     /// Initializes a new instance of the <see cref="SubtitleExtractPlugin"/> class.
@@ -35,4 +37,17 @@ public class SubtitleExtractPlugin : BasePlugin<PluginConfiguration>
     /// Gets the current plugin instance.
     /// </summary>
     public static SubtitleExtractPlugin Current { get; private set; } = null!;
+
+    /// <inheritdoc />
+    public IEnumerable<PluginPageInfo> GetPages()
+    {
+        return new[]
+        {
+            new PluginPageInfo
+            {
+                Name = "Jellyfin subtitle extrator",
+                EmbeddedResourcePath = GetType().Namespace + ".Configuration.configPage.html"
+            }
+        };
+    }
 }

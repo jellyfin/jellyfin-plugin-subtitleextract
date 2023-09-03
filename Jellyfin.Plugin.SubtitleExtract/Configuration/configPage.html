@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Jellyfin Subtitle Extractor</title>
+</head>
+<body>
+    <div data-role="page" class="page type-interior pluginConfigurationPage subsExtractorConfigurationPage" data-require="emby-input,emby-button,emby-select,emby-checkbox,emby-linkbutton">
+
+        <div data-role="content">
+            <div class="content-primary">
+
+                <form class="extractorConfigurationForm">
+                    <br />
+
+                    <div class="checkboxContainer checkboxContainer-withDescription">
+                        <label>
+                            <input is="emby-checkbox" type="checkbox" id="chkEnableDuringScan" />
+                            <span>Extract subtitles during library scan</span>
+                        </label>
+                        <div class="fieldDescription checkboxFieldDescription">This will make sure subtitles are extracted sooner but will result in longer library scans. Does not disable the scheduled task.</div>
+                    </div>
+
+                    <br />
+                    <div>
+                        <button is="emby-button" type="submit" class="raised button-submit block emby-button"><span>Save</span></button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <script type="text/javascript">
+
+            (function () {
+
+                var pluginId = "CD893C24-B59E-4060-87B2-184070E1BF68";
+
+                $('.subsExtractorConfigurationPage').on('pageshow', function (event) {
+
+                    var page = this;
+
+                    Dashboard.showLoadingMsg();
+
+                    ApiClient.getPluginConfiguration(pluginId).then(function (config) {
+
+                        page.querySelector('#chkEnableDuringScan').checked = !!config.ExtractionDuringLibraryScan;
+
+                        Dashboard.hideLoadingMsg();
+                    });
+                });
+
+                $('.extractorConfigurationForm').off('submit.plugin').on('submit.plugin', function (e) {
+
+                    Dashboard.showLoadingMsg();
+
+                    var form = this;
+
+                    ApiClient.getPluginConfiguration(pluginId).then(function (config) {
+                        config.ExtractionDuringLibraryScan = form.querySelector('#chkEnableDuringScan').checked;
+
+                        ApiClient.updatePluginConfiguration(pluginId, config).then(Dashboard.processPluginConfigurationUpdateResult);
+                    });
+
+                    return false;
+                });
+
+            })();
+
+        </script>
+    </div>
+</body>
+</html>
