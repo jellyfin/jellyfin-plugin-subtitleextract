@@ -10,7 +10,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Jellyfin.Controller" Version="10.8.1" />
+    <PackageReference Include="Jellyfin.Controller" Version="10.8.13" />
   </ItemGroup>
 
   <ItemGroup>
