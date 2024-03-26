@@ -27,9 +27,9 @@ public class ExtractSubtitlesTask : IScheduledTask
     private readonly ISubtitleEncoder _subtitleEncoder;
     private readonly ILocalizationManager _localization;
 
-    private static readonly BaseItemKind[] _itemTypes = { BaseItemKind.Episode, BaseItemKind.Movie };
-    private static readonly string[] _mediaTypes = { MediaType.Video };
-    private static readonly SourceType[] _sourceTypes = { SourceType.Library };
+    private static readonly BaseItemKind[] _itemTypes = [BaseItemKind.Episode, BaseItemKind.Movie];
+    private static readonly MediaType[] _mediaTypes = [MediaType.Video];
+    private static readonly SourceType[] _sourceTypes = [SourceType.Library];
     private static readonly DtoOptions _dtoOptions = new(false);
 
     private readonly SubtitlesExtractor _extractor;
