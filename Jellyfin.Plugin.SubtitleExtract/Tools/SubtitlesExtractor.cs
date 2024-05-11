@@ -3,10 +3,8 @@ using System.Globalization;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using Jellyfin.Extensions;
 using MediaBrowser.Controller.Entities;
 using MediaBrowser.Controller.MediaEncoding;
-using MediaBrowser.Model.MediaInfo;
 using Microsoft.Extensions.Logging;
 
 namespace Jellyfin.Plugin.SubtitleExtract.Tools
@@ -18,8 +16,6 @@ namespace Jellyfin.Plugin.SubtitleExtract.Tools
     {
         private readonly ISubtitleEncoder _subtitleEncoder;
         private readonly ILogger<SubtitlesExtractor> _logger;
-
-        private static readonly string[] _supportedFormats = { SubtitleFormat.SRT, SubtitleFormat.ASS, SubtitleFormat.SSA };
 
         /// <summary>
         /// Initializes a new instance of the <see cref="SubtitlesExtractor"/> class.
@@ -45,35 +41,22 @@ namespace Jellyfin.Plugin.SubtitleExtract.Tools
             try
             {
                 var mediaSourceId = video.Id.ToString("N", CultureInfo.InvariantCulture);
-                var streams = video.GetMediaStreams()
-                    .Where(stream => stream.IsTextSubtitleStream
-                                     && stream.SupportsExternalStream
-                                     && !stream.IsExternal);
-                foreach (var stream in streams)
+                var subtitleMediaStream = video
+                    .GetMediaStreams()
+                    .FirstOrDefault(stream => stream is { IsTextSubtitleStream: true, SupportsExternalStream: true, IsExternal: false });
+                if (subtitleMediaStream is not null)
                 {
-                    var index = stream.Index;
-                    var format = stream.Codec;
-
                     try
                     {
-                        // SubtitleEncoder has readers only for these formats, everything else converted to SRT.
-                        if (!_supportedFormats.Contains(format, StringComparison.OrdinalIgnoreCase))
-                        {
-                            format = SubtitleFormat.SRT;
-                        }
-
-                        _logger.LogInformation("Extracting subtitle stream {Index} from {Video} as {Format}", index, video.Path, format);
-
-                        await _subtitleEncoder.GetSubtitles(video, mediaSourceId, index, format, 0, 0, false, cancellationToken).ConfigureAwait(false);
+                        _logger.LogInformation("Extracting subtitles from {Video}", video.Path);
+                        await _subtitleEncoder.GetSubtitles(video, mediaSourceId, subtitleMediaStream.Index, subtitleMediaStream.Codec, 0, 0, false, cancellationToken).ConfigureAwait(false);
                     }
                     catch (Exception ex)
                     {
                         _logger.LogWarning(
                             ex,
-                            "Unable to extract subtitle File:{File}\tStreamIndex:{Index}\tCodec:{Codec}",
-                            video.Path,
-                            index,
-                            format);
+                            "Unable to extract subtitle File:{File}",
+                            video.Path);
                     }
                 }
             }
