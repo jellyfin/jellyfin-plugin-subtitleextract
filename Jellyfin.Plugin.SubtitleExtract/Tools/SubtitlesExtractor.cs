@@ -48,7 +48,7 @@ namespace Jellyfin.Plugin.SubtitleExtract.Tools
                 {
                     try
                     {
-                        _logger.LogInformation("Extracting subtitles from {Video}", video.Path);
+                        _logger.LogDebug("Extracting subtitles from {Video}", video.Path);
                         await _subtitleEncoder.GetSubtitles(video, mediaSourceId, subtitleMediaStream.Index, subtitleMediaStream.Codec, 0, 0, false, cancellationToken).ConfigureAwait(false);
                     }
                     catch (Exception ex)
