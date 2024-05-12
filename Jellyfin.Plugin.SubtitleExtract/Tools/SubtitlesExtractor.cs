@@ -5,6 +5,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using MediaBrowser.Controller.Entities;
 using MediaBrowser.Controller.MediaEncoding;
+using MediaBrowser.Model.MediaInfo;
 using Microsoft.Extensions.Logging;
 
 namespace Jellyfin.Plugin.SubtitleExtract.Tools
@@ -49,7 +50,11 @@ namespace Jellyfin.Plugin.SubtitleExtract.Tools
                     try
                     {
                         _logger.LogDebug("Extracting subtitles from {Video}", video.Path);
-                        await _subtitleEncoder.GetSubtitles(video, mediaSourceId, subtitleMediaStream.Index, subtitleMediaStream.Codec, 0, 0, false, cancellationToken).ConfigureAwait(false);
+                        // Always ask for SRT, the extractor will extract the actual codec and then convert the one we asked for in SRT without storing.
+                        var outputSubtitle = await _subtitleEncoder.GetSubtitles(video, mediaSourceId, subtitleMediaStream.Index, SubtitleFormat.SRT, 0, 0, false, cancellationToken).ConfigureAwait(false);
+                        await using (outputSubtitle.ConfigureAwait(false))
+                        {
+                        }
                     }
                     catch (Exception ex)
                     {
