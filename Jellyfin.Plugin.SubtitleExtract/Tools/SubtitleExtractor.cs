@@ -54,7 +54,10 @@ namespace Jellyfin.Plugin.SubtitleExtract.Tools
                 {
                     _logger.LogDebug("Extracting subtitles from {Video}", video.Path);
                     // Just asking for a subtitle will force the encoder to extract all subtitles.
-                    await _subtitleEncoder.GetSubtitles(video, mediaSourceId, extractableSubtitleMediaStream.Index, SubtitleFormat.SRT, 0, 0, false, cancellationToken).ConfigureAwait(false);
+                    var subtitleStream = await _subtitleEncoder.GetSubtitles(video, mediaSourceId, extractableSubtitleMediaStream.Index, SubtitleFormat.SRT, 0, 0, false, cancellationToken).ConfigureAwait(false);
+                    await using (subtitleStream.ConfigureAwait(false))
+                    {
+                    }
                 }
                 catch (Exception ex)
                 {
