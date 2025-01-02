@@ -41,13 +41,12 @@ public class SubtitleExtractPlugin : BasePlugin<PluginConfiguration>, IHasWebPag
     /// <inheritdoc />
     public IEnumerable<PluginPageInfo> GetPages()
     {
-        return new[]
-        {
+        return [
             new PluginPageInfo
             {
-                Name = "Jellyfin subtitle extrator",
+                Name = "Jellyfin subtitle extractor",
                 EmbeddedResourcePath = GetType().Namespace + ".Configuration.configPage.html"
             }
-        };
+        ];
     }
 }
