@@ -44,7 +44,7 @@ namespace Jellyfin.Plugin.SubtitleExtract.Tools
                 var mediaSourceId = video.Id.ToString("N", CultureInfo.InvariantCulture);
                 var extractableSubtitleMediaStream = video
                     .GetMediaStreams()
-                    .First(s => s is { IsExtractableSubtitleStream: true, SupportsExternalStream: true });
+                    .FirstOrDefault(s => s is { IsExtractableSubtitleStream: true, SupportsExternalStream: true });
                 if (extractableSubtitleMediaStream is null)
                 {
                     return;
