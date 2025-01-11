@@ -13,18 +13,18 @@ namespace Jellyfin.Plugin.SubtitleExtract.Tools
     /// <summary>
     /// Helper class to extract subtitles for immediate access in web player.
     /// </summary>
-    public class SubtitlesExtractor
+    public class SubtitleExtractor
     {
         private readonly ISubtitleEncoder _subtitleEncoder;
-        private readonly ILogger<SubtitlesExtractor> _logger;
+        private readonly ILogger<SubtitleExtractor> _logger;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="SubtitlesExtractor"/> class.
+        /// Initializes a new instance of the <see cref="SubtitleExtractor"/> class.
         /// </summary>
         /// <param name="logger">Instance of the <see cref="ILogger"/> interface.</param>
         /// <param name="subtitleEncoder">Instance of the <see cref="ISubtitleEncoder"/> interface.</param>
-        public SubtitlesExtractor(
-            ILogger<SubtitlesExtractor> logger,
+        public SubtitleExtractor(
+            ILogger<SubtitleExtractor> logger,
             ISubtitleEncoder subtitleEncoder)
         {
             _subtitleEncoder = subtitleEncoder;
@@ -42,27 +42,29 @@ namespace Jellyfin.Plugin.SubtitleExtract.Tools
             try
             {
                 var mediaSourceId = video.Id.ToString("N", CultureInfo.InvariantCulture);
-                var subtitleMediaStream = video
+                var extractableSubtitleMediaStream = video
                     .GetMediaStreams()
-                    .FirstOrDefault(stream => stream is { IsTextSubtitleStream: true, SupportsExternalStream: true, IsExternal: false });
-                if (subtitleMediaStream is not null)
+                    .FirstOrDefault(s => s is { IsExtractableSubtitleStream: true, SupportsExternalStream: true });
+                if (extractableSubtitleMediaStream is null)
                 {
-                    try
+                    return;
+                }
+
+                try
+                {
+                    _logger.LogDebug("Extracting subtitles from {Video}", video.Path);
+                    // Just asking for a subtitle will force the encoder to extract all subtitles.
+                    var subtitleStream = await _subtitleEncoder.GetSubtitles(video, mediaSourceId, extractableSubtitleMediaStream.Index, SubtitleFormat.SRT, 0, 0, false, cancellationToken).ConfigureAwait(false);
+                    await using (subtitleStream.ConfigureAwait(false))
                     {
-                        _logger.LogDebug("Extracting subtitles from {Video}", video.Path);
-                        // Always ask for SRT, the extractor will extract the actual codec and then convert the one we asked for in SRT without storing.
-                        var outputSubtitle = await _subtitleEncoder.GetSubtitles(video, mediaSourceId, subtitleMediaStream.Index, SubtitleFormat.SRT, 0, 0, false, cancellationToken).ConfigureAwait(false);
-                        await using (outputSubtitle.ConfigureAwait(false))
-                        {
-                        }
                     }
-                    catch (Exception ex)
-                    {
-                        _logger.LogWarning(
-                            ex,
-                            "Unable to extract subtitle File:{File}",
-                            video.Path);
-                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(
+                        ex,
+                        "Unable to extract subtitle File:{File}",
+                        video.Path);
                 }
             }
             catch (Exception ex)

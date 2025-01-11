@@ -9,7 +9,6 @@ using MediaBrowser.Controller.Dto;
 using MediaBrowser.Controller.Entities;
 using MediaBrowser.Controller.Library;
 using MediaBrowser.Controller.MediaEncoding;
-using MediaBrowser.Model.Entities;
 using MediaBrowser.Model.Globalization;
 using MediaBrowser.Model.Tasks;
 using Microsoft.Extensions.Logging;
@@ -24,7 +23,6 @@ public class ExtractSubtitlesTask : IScheduledTask
     private const int QueryPageLimit = 100;
 
     private readonly ILibraryManager _libraryManager;
-    private readonly ISubtitleEncoder _subtitleEncoder;
     private readonly ILocalizationManager _localization;
 
     private static readonly BaseItemKind[] _itemTypes = [BaseItemKind.Episode, BaseItemKind.Movie];
@@ -32,25 +30,22 @@ public class ExtractSubtitlesTask : IScheduledTask
     private static readonly SourceType[] _sourceTypes = [SourceType.Library];
     private static readonly DtoOptions _dtoOptions = new(false);
 
-    private readonly SubtitlesExtractor _extractor;
+    private readonly SubtitleExtractor _extractor;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="ExtractSubtitlesTask" /> class.
     /// </summary>
     /// <param name="libraryManager">Instance of <see cref="ILibraryManager"/> interface.</param>
-    /// /// <param name="subtitleEncoder">Instance of <see cref="ISubtitleEncoder"/> interface.</param>
+    /// <param name="subtitleExtractor"><see cref="SubtitleExtractor"/> instance.</param>
     /// <param name="localization">Instance of <see cref="ILocalizationManager"/> interface.</param>
-    /// <param name="loggerFactory">Instance of the <see cref="ILoggerFactory"/> interface.</param>
     public ExtractSubtitlesTask(
         ILibraryManager libraryManager,
-        ISubtitleEncoder subtitleEncoder,
-        ILocalizationManager localization,
-        ILoggerFactory loggerFactory)
+        SubtitleExtractor subtitleExtractor,
+        ILocalizationManager localization)
     {
         _libraryManager = libraryManager;
-        _subtitleEncoder = subtitleEncoder;
         _localization = localization;
-        _extractor = new SubtitlesExtractor(loggerFactory.CreateLogger<SubtitlesExtractor>(), _subtitleEncoder);
+        _extractor = subtitleExtractor;
     }
 
     /// <inheritdoc />
@@ -66,7 +61,10 @@ public class ExtractSubtitlesTask : IScheduledTask
     public string Category => _localization.GetLocalizedString("TasksLibraryCategory");
 
     /// <inheritdoc />
-    public IEnumerable<TaskTriggerInfo> GetDefaultTriggers() => Enumerable.Empty<TaskTriggerInfo>();
+    public IEnumerable<TaskTriggerInfo> GetDefaultTriggers()
+    {
+        return [];
+    }
 
     /// <inheritdoc />
     public async Task ExecuteAsync(IProgress<double> progress, CancellationToken cancellationToken)
