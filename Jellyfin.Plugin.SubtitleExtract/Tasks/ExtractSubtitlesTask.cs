@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Cryptography;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Jellyfin.Data.Enums;
@@ -69,6 +71,44 @@ public class ExtractSubtitlesTask : IScheduledTask
     /// <inheritdoc />
     public async Task ExecuteAsync(IProgress<double> progress, CancellationToken cancellationToken)
     {
+        var startProgress = 0d;
+
+        var config = SubtitleExtractPlugin.Current!.Configuration;
+        var libs = config.SelectedLibraries.Split(",").Select(v => v.Trim()).Where(v => !string.IsNullOrEmpty(v)).ToList();
+
+        List<string> parentIds = [];
+        if (libs.Count > 0)
+        {
+            // Try to get parent ids from the selected libraries
+            parentIds = _libraryManager.GetVirtualFolders().Where(vf => libs.Contains(vf.Name)).Select(vf => vf.ItemId).ToList();
+        }
+
+        if (parentIds.Count > 0)
+        {
+            // In case parent ids are found, run the extraction on each found library
+            foreach (var parentId in parentIds)
+            {
+                startProgress = await RunExtractionWithProgress(progress, parentId, parentIds, startProgress, cancellationToken).ConfigureAwait(false);
+            }
+        }
+        else
+        {
+            // Otherwise run it on everything
+            await RunExtractionWithProgress(progress, null, [], startProgress, cancellationToken).ConfigureAwait(false);
+        }
+
+        progress.Report(100);
+    }
+
+    private async Task<double> RunExtractionWithProgress(
+        IProgress<double> progress,
+        string? parentId,
+        List<string> parentIds,
+        double startProgress,
+        CancellationToken cancellationToken)
+    {
+        var libsCount = parentIds.Count > 0 ? parentIds.Count : 1;
+
         var query = new InternalItemsQuery
         {
             Recursive = true,
@@ -78,8 +118,14 @@ public class ExtractSubtitlesTask : IScheduledTask
             DtoOptions = _dtoOptions,
             MediaTypes = _mediaTypes,
             SourceTypes = _sourceTypes,
-            Limit = QueryPageLimit,
+            Limit = QueryPageLimit
         };
+
+        if (parentIds.Count > 0 && parentId != null)
+        {
+            // In case parent is provided, add its Guid to the query
+            query.ParentId = Guid.ParseExact(parentId, "N");
+        }
 
         var numberOfVideos = _libraryManager.GetCount(query);
 
@@ -98,12 +144,16 @@ public class ExtractSubtitlesTask : IScheduledTask
                 await _extractor.Run(video, cancellationToken).ConfigureAwait(false);
 
                 completedVideos++;
-                progress.Report(100d * completedVideos / numberOfVideos);
+
+                // Report the progress using "startProgress" that allows to track progress across multiple libraries
+                progress.Report(startProgress + (100d * completedVideos / numberOfVideos / libsCount));
             }
 
             startIndex += QueryPageLimit;
         }
 
-        progress.Report(100);
+        // When done, update the startProgress to the current progress for next libraries
+        startProgress += 100d * completedVideos / numberOfVideos / libsCount;
+        return startProgress;
     }
 }

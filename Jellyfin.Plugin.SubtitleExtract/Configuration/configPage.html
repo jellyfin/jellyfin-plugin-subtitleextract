@@ -4,31 +4,115 @@
     <title>Jellyfin Subtitle Extractor</title>
 </head>
 <body>
-    <div data-role="page" class="page type-interior pluginConfigurationPage subsExtractorConfigurationPage" data-require="emby-input,emby-button,emby-select,emby-checkbox,emby-linkbutton">
+<div data-role="page" class="page type-interior pluginConfigurationPage subsExtractorConfigurationPage" data-require="emby-input,emby-button,emby-select,emby-checkbox,emby-linkbutton">
 
-        <div data-role="content">
-            <div class="content-primary">
+    <div data-role="content">
+        <div class="content-primary">
 
-                <form class="extractorConfigurationForm">
-                    <br />
+            <form class="extractorConfigurationForm">
+                <br/>
 
-                    <div class="checkboxContainer checkboxContainer-withDescription">
-                        <label>
-                            <input is="emby-checkbox" type="checkbox" id="chkEnableDuringScan" />
-                            <span>Extract subtitles during library scan</span>
-                        </label>
-                        <div class="fieldDescription checkboxFieldDescription">This will make sure subtitles are extracted sooner but will result in longer library scans. Does not disable the scheduled task.</div>
+                <div class="checkboxContainer checkboxContainer-withDescription">
+                    <label>
+                        <input is="emby-checkbox" type="checkbox" id="chkEnableDuringScan"/>
+                        <span>Extract subtitles during library scan</span>
+                    </label>
+                    <div class="fieldDescription checkboxFieldDescription">This will make sure subtitles are extracted sooner but will result in longer library scans. Does not disable the scheduled task.</div>
+                </div>
+
+                <div class="folderAccessListContainer" style="margin-bottom: -1em">
+                    <div class="folderAccess">
+                        <h3 class="checkboxListLabel">Limit extraction to the following libraries (if nothing is selected, all libraries will be included)</h3>
+                        <div class="checkboxList paperList" style="padding: 0.5em 1em" id="libraryCheckboxes"></div>
                     </div>
+                    <label class="inputLabel" for="SelectedLibraries"></label>
+                    <input id="SelectedLibraries" type="hidden" is="emby-input"/>
+                </div>
 
-                    <br />
-                    <div>
-                        <button is="emby-button" type="submit" class="raised button-submit block emby-button"><span>Save</span></button>
-                    </div>
-                </form>
-            </div>
+                <div class="inputContainer" id="includedCodecs">
+                    <label class="inputLabel inputLabelUnfocused" for="IncludedCodecs"> Included Codecs </label>
+                    <input id="IncludedCodecs" type="text" is="emby-input"/>
+                    <div class="fieldDescription">Limit extraction to medias with a stream of the following codecs (separated by a coma - ass,subrip).</div>
+                </div>
+
+                <br/>
+                <div>
+                    <button is="emby-button" type="submit" class="raised button-submit block emby-button">
+                        <span>Save</span>
+                    </button>
+                </div>
+            </form>
         </div>
+    </div>
 
-        <script type="text/javascript">
+    <script type="text/javascript">
+
+            function updateList(textField, container) {
+                textField.value = Array.from(container.querySelectorAll('input[type="checkbox"]:checked'))
+                    .map((checkbox) => checkbox.nextElementSibling.textContent)
+                    .join(", ");
+            }
+
+            function generateCheckboxList(items, containerId, textFieldId) {
+                const container = document.getElementById(containerId);
+                const checkedItems = new Set(document.getElementById(textFieldId).value.split(", ").filter(Boolean));
+                const fragment = document.createDocumentFragment();
+                for (const item of items) {
+                    const label = document.createElement("label");
+                    label.className = "emby-checkbox-label";
+                    label.innerHTML = '<input type="checkbox" is="emby-checkbox"' + (checkedItems.has(item) ? " checked" : "") + ">" + '<span class="checkboxLabel">' + item + "</span>";
+                    fragment.appendChild(label);
+                }
+                container.innerHTML = "";
+                container.appendChild(fragment);
+                container.addEventListener(
+                    "change",
+                    (e) => {
+                        if (e.target.type === "checkbox") updateList(document.getElementById(textFieldId), container);
+                    },
+                    { passive: true },
+                );
+            }
+
+            async function populateLibraries() {
+                const response = await getJson("Library/VirtualFolders");
+                const tvLibraries = response.filter((item) => item.CollectionType === undefined || item.CollectionType === "tvshows" || item.CollectionType === "movies");
+                const libraryNames = tvLibraries.map((lib) => lib.Name || "Unnamed Library");
+                generateCheckboxList(libraryNames, "libraryCheckboxes", "SelectedLibraries");
+            }
+
+            async function getJson(url) {
+                return await fetchWithAuth(url, "GET")
+                    .then((r) => {
+                        if (r.ok) {
+                            return r.json();
+                        } else {
+                            return null;
+                        }
+                    })
+                    .catch((err) => {
+                        console.debug(err);
+                    });
+            }
+
+            // make an authenticated fetch to the server
+            async function fetchWithAuth(url, method, body) {
+                url = ApiClient.serverAddress() + "/" + url;
+
+                const reqInit = {
+                    method: method,
+                    headers: {
+                        Authorization: "MediaBrowser Token=" + ApiClient.accessToken(),
+                    },
+                    body: body,
+                };
+
+                if (method === "POST") {
+                    reqInit.headers["Content-Type"] = "application/json";
+                }
+
+                return await fetch(url, reqInit);
+            }
 
             (function () {
 
@@ -41,8 +125,11 @@
                     Dashboard.showLoadingMsg();
 
                     ApiClient.getPluginConfiguration(pluginId).then(function (config) {
+                        populateLibraries();
 
                         page.querySelector('#chkEnableDuringScan').checked = !!config.ExtractionDuringLibraryScan;
+                        document.querySelector("#SelectedLibraries").value = config.SelectedLibraries;
+                        document.querySelector("#IncludedCodecs").value = config.IncludedCodecs;
 
                         Dashboard.hideLoadingMsg();
                     });
@@ -56,6 +143,8 @@
 
                     ApiClient.getPluginConfiguration(pluginId).then(function (config) {
                         config.ExtractionDuringLibraryScan = form.querySelector('#chkEnableDuringScan').checked;
+                        config.SelectedLibraries = document.querySelector("#SelectedLibraries").value;
+                        config.IncludedCodecs = document.querySelector("#IncludedCodecs").value;
 
                         ApiClient.updatePluginConfiguration(pluginId, config).then(Dashboard.processPluginConfigurationUpdateResult);
                     });
@@ -66,6 +155,6 @@
             })();
 
         </script>
-    </div>
+</div>
 </body>
 </html>

@@ -1,3 +1,4 @@
+using System;
 using MediaBrowser.Model.Plugins;
 
 namespace Jellyfin.Plugin.SubtitleExtract.Configuration;
@@ -19,4 +20,14 @@ public class PluginConfiguration : BasePluginConfiguration
     /// default = false.
     /// </summary>
     public bool ExtractionDuringLibraryScan { get; set; } = false;
+
+    /// <summary>
+    /// Gets or sets the list of selected libraries to extract subtitles from (empty means all).
+    /// </summary>
+    public string SelectedLibraries { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Gets or sets the list of codecs to look for when extracting subtitles (empty means all).
+    /// </summary>
+    public string IncludedCodecs { get; set; } = string.Empty;
 }

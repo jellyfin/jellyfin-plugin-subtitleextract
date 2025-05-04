@@ -41,10 +41,14 @@ namespace Jellyfin.Plugin.SubtitleExtract.Tools
         {
             try
             {
+                var config = SubtitleExtractPlugin.Current!.Configuration;
+                // Retrieve le list of codecs to check. In case none is provided, do not check codecs at all.
+                var codecs = config.IncludedCodecs.Trim().Split(",").Select(v => v.Trim()).Where(v => !string.IsNullOrEmpty(v)).ToList();
+
                 var mediaSourceId = video.Id.ToString("N", CultureInfo.InvariantCulture);
                 var extractableSubtitleMediaStream = video
                     .GetMediaStreams()
-                    .FirstOrDefault(s => s is { IsExtractableSubtitleStream: true, SupportsExternalStream: true });
+                    .FirstOrDefault(s => s is { IsExtractableSubtitleStream: true, SupportsExternalStream: true } && (codecs.Count == 0 || codecs.Contains(s.Codec, StringComparer.CurrentCultureIgnoreCase)));
                 if (extractableSubtitleMediaStream is null)
                 {
                     return;
