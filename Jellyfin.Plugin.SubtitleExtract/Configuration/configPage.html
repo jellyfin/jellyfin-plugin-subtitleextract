@@ -4,49 +4,46 @@
     <title>Jellyfin Subtitle Extractor</title>
 </head>
 <body>
-<div data-role="page" class="page type-interior pluginConfigurationPage subsExtractorConfigurationPage" data-require="emby-input,emby-button,emby-select,emby-checkbox,emby-linkbutton">
+    <div data-role="page" class="page type-interior pluginConfigurationPage subsExtractorConfigurationPage" data-require="emby-input,emby-button,emby-select,emby-checkbox,emby-linkbutton">
+        <div data-role="content">
+            <div class="content-primary">
+                <form class="extractorConfigurationForm">
+                    <br />
 
-    <div data-role="content">
-        <div class="content-primary">
-
-            <form class="extractorConfigurationForm">
-                <br/>
-
-                <div class="checkboxContainer checkboxContainer-withDescription">
-                    <label>
-                        <input is="emby-checkbox" type="checkbox" id="chkEnableDuringScan"/>
-                        <span>Extract subtitles during library scan</span>
-                    </label>
-                    <div class="fieldDescription checkboxFieldDescription">This will make sure subtitles are extracted sooner but will result in longer library scans. Does not disable the scheduled task.</div>
-                </div>
-
-                <div class="folderAccessListContainer" style="margin-bottom: -1em">
-                    <div class="folderAccess">
-                        <h3 class="checkboxListLabel">Limit extraction to the following libraries (if nothing is selected, all libraries will be included)</h3>
-                        <div class="checkboxList paperList" style="padding: 0.5em 1em" id="libraryCheckboxes"></div>
+                    <div class="checkboxContainer checkboxContainer-withDescription">
+                        <label>
+                            <input is="emby-checkbox" type="checkbox" id="chkEnableDuringScan" />
+                            <span>Extract subtitles during library scan</span>
+                        </label>
+                        <div class="fieldDescription checkboxFieldDescription">This will make sure subtitles are extracted sooner but will result in longer library scans. Does not disable the scheduled task.</div>
                     </div>
-                    <label class="inputLabel" for="SelectedLibraries"></label>
-                    <input id="SelectedLibraries" type="hidden" is="emby-input"/>
-                </div>
 
-                <div class="inputContainer" id="includedCodecs">
-                    <label class="inputLabel inputLabelUnfocused" for="IncludedCodecs"> Included Codecs </label>
-                    <input id="IncludedCodecs" type="text" is="emby-input"/>
-                    <div class="fieldDescription">Limit extraction to medias with a stream of the following codecs (separated by a coma - ass,subrip).</div>
-                </div>
+                    <div class="folderAccessListContainer" style="margin-bottom: -1em;">
+                        <div class="folderAccess">
+                            <h3 class="checkboxListLabel">Limit extraction to the following libraries (if nothing is selected, all libraries will be included)</h3>
+                            <div class="checkboxList paperList" style="padding: 0.5em 1em;" id="libraryCheckboxes"></div>
+                        </div>
+                        <label class="inputLabel" for="SelectedLibraries"></label>
+                        <input id="SelectedLibraries" type="hidden" is="emby-input" />
+                    </div>
 
-                <br/>
-                <div>
-                    <button is="emby-button" type="submit" class="raised button-submit block emby-button">
-                        <span>Save</span>
-                    </button>
-                </div>
-            </form>
+                    <div class="inputContainer" id="includedCodecs">
+                        <label class="inputLabel inputLabelUnfocused" for="IncludedCodecs"> Included Codecs </label>
+                        <input id="IncludedCodecs" type="text" is="emby-input" />
+                        <div class="fieldDescription">Limit extraction to medias with a stream of the following codecs (separated by a coma - ass,subrip).</div>
+                    </div>
+
+                    <br />
+                    <div>
+                        <button is="emby-button" type="submit" class="raised button-submit block emby-button">
+                            <span>Save</span>
+                        </button>
+                    </div>
+                </form>
+            </div>
         </div>
-    </div>
 
-    <script type="text/javascript">
-
+        <script type="text/javascript">
             function updateList(textField, container) {
                 textField.value = Array.from(container.querySelectorAll('input[type="checkbox"]:checked'))
                     .map((checkbox) => checkbox.nextElementSibling.textContent)
@@ -70,7 +67,7 @@
                     (e) => {
                         if (e.target.type === "checkbox") updateList(document.getElementById(textFieldId), container);
                     },
-                    { passive: true },
+                    { passive: true }
                 );
             }
 
@@ -115,11 +112,9 @@
             }
 
             (function () {
-
                 var pluginId = "CD893C24-B59E-4060-87B2-184070E1BF68";
 
-                $('.subsExtractorConfigurationPage').on('pageshow', function (event) {
-
+                $(".subsExtractorConfigurationPage").on("pageshow", function (event) {
                     var page = this;
 
                     Dashboard.showLoadingMsg();
@@ -127,7 +122,7 @@
                     ApiClient.getPluginConfiguration(pluginId).then(function (config) {
                         populateLibraries();
 
-                        page.querySelector('#chkEnableDuringScan').checked = !!config.ExtractionDuringLibraryScan;
+                        page.querySelector("#chkEnableDuringScan").checked = !!config.ExtractionDuringLibraryScan;
                         document.querySelector("#SelectedLibraries").value = config.SelectedLibraries;
                         document.querySelector("#IncludedCodecs").value = config.IncludedCodecs;
 
@@ -135,26 +130,25 @@
                     });
                 });
 
-                $('.extractorConfigurationForm').off('submit.plugin').on('submit.plugin', function (e) {
+                $(".extractorConfigurationForm")
+                    .off("submit.plugin")
+                    .on("submit.plugin", function (e) {
+                        Dashboard.showLoadingMsg();
 
-                    Dashboard.showLoadingMsg();
+                        var form = this;
 
-                    var form = this;
+                        ApiClient.getPluginConfiguration(pluginId).then(function (config) {
+                            config.ExtractionDuringLibraryScan = form.querySelector("#chkEnableDuringScan").checked;
+                            config.SelectedLibraries = document.querySelector("#SelectedLibraries").value;
+                            config.IncludedCodecs = document.querySelector("#IncludedCodecs").value;
 
-                    ApiClient.getPluginConfiguration(pluginId).then(function (config) {
-                        config.ExtractionDuringLibraryScan = form.querySelector('#chkEnableDuringScan').checked;
-                        config.SelectedLibraries = document.querySelector("#SelectedLibraries").value;
-                        config.IncludedCodecs = document.querySelector("#IncludedCodecs").value;
+                            ApiClient.updatePluginConfiguration(pluginId, config).then(Dashboard.processPluginConfigurationUpdateResult);
+                        });
 
-                        ApiClient.updatePluginConfiguration(pluginId, config).then(Dashboard.processPluginConfigurationUpdateResult);
+                        return false;
                     });
-
-                    return false;
-                });
-
             })();
-
         </script>
-</div>
+    </div>
 </body>
 </html>
