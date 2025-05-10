@@ -2,14 +2,14 @@ name: "Subtitle Extract"
 guid: "CD893C24-B59E-4060-87B2-184070E1BF68"
 imageUrl: "https://repo.jellyfin.org/releases/plugin/images/jellyfin-plugin-subtitleextract.png"
 version: 4
-targetAbi: "10.9.0.0"
-framework: "net8.0"
+targetAbi: "10.11.0.0"
+framework: "net9.0"
 owner: "jellyfin"
 overview: "Extracts Subtitles."
 description: >
   Extracts embedded subtitles.
 
-category: "General"
+category: "Subtitles"
 artifacts:
   - "Jellyfin.Plugin.SubtitleExtract.dll"
 changelog: |2-
