@@ -31,7 +31,7 @@ public class SubtitleExtractPlugin : BasePlugin<PluginConfiguration>, IHasWebPag
     public override Guid Id => new("CD893C24-B59E-4060-87B2-184070E1BF68");
 
     /// <inheritdoc />
-    public override string Description => "Extracts embedded subtitles";
+    public override string Description => "Extracts embedded subtitles and attachments";
 
     /// <summary>
     /// Gets the current plugin instance.
@@ -44,7 +44,7 @@ public class SubtitleExtractPlugin : BasePlugin<PluginConfiguration>, IHasWebPag
         return [
             new PluginPageInfo
             {
-                Name = "Jellyfin subtitle extractor",
+                Name = "Jellyfin subtitle and attachment extractor",
                 EmbeddedResourcePath = GetType().Namespace + ".Configuration.configPage.html"
             }
         ];

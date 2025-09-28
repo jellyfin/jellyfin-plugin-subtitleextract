@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Jellyfin.Data.Enums;
@@ -7,21 +8,22 @@ using MediaBrowser.Controller.Dto;
 using MediaBrowser.Controller.Entities;
 using MediaBrowser.Controller.Library;
 using MediaBrowser.Controller.MediaEncoding;
+using MediaBrowser.Model.Entities;
 using MediaBrowser.Model.Globalization;
 using MediaBrowser.Model.Tasks;
 
 namespace Jellyfin.Plugin.SubtitleExtract.Tasks;
 
 /// <summary>
-/// Scheduled task to extract embedded subtitles for immediate access in web player.
+/// Scheduled task to extract embedded attachments for immediate access in web player.
 /// </summary>
-public class ExtractSubtitlesTask : IScheduledTask
+public class ExtractAttachmentsTask : IScheduledTask
 {
     private const int QueryPageLimit = 250;
 
     private readonly ILibraryManager _libraryManager;
     private readonly ILocalizationManager _localization;
-    private readonly ISubtitleEncoder _encoder;
+    private readonly IAttachmentExtractor _extractor;
 
     private static readonly BaseItemKind[] _itemTypes = [BaseItemKind.Episode, BaseItemKind.Movie];
     private static readonly MediaType[] _mediaTypes = [MediaType.Video];
@@ -29,29 +31,29 @@ public class ExtractSubtitlesTask : IScheduledTask
     private static readonly DtoOptions _dtoOptions = new(false);
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="ExtractSubtitlesTask" /> class.
+    /// Initializes a new instance of the <see cref="ExtractAttachmentsTask" /> class.
     /// </summary>
     /// <param name="libraryManager">Instance of <see cref="ILibraryManager"/> interface.</param>
-    /// <param name="subtitleEncoder"><see cref="ISubtitleEncoder"/> instance.</param>
+    /// <param name="attachmentExtractor"><see cref="IAttachmentExtractor"/> instance.</param>
     /// <param name="localization">Instance of <see cref="ILocalizationManager"/> interface.</param>
-    public ExtractSubtitlesTask(
+    public ExtractAttachmentsTask(
         ILibraryManager libraryManager,
-        ISubtitleEncoder subtitleEncoder,
+        IAttachmentExtractor attachmentExtractor,
         ILocalizationManager localization)
     {
         _libraryManager = libraryManager;
         _localization = localization;
-        _encoder = subtitleEncoder;
+        _extractor = attachmentExtractor;
     }
 
     /// <inheritdoc />
-    public string Key => "ExtractSubtitles";
+    public string Key => "ExtractAttachments";
 
     /// <inheritdoc />
-    public string Name => "Extract Subtitles";
+    public string Name => "Extract Attachments";
 
     /// <inheritdoc />
-    public string Description => "Extracts embedded subtitles.";
+    public string Description => "Extracts embedded attachments.";
 
     /// <inheritdoc />
     public string Category => _localization.GetLocalizedString("TasksLibraryCategory");
@@ -93,7 +95,21 @@ public class ExtractSubtitlesTask : IScheduledTask
 
                 foreach (var mediaSource in video.GetMediaSources(false))
                 {
-                    await _encoder.ExtractAllExtractableSubtitles(mediaSource, cancellationToken).ConfigureAwait(false);
+                    var streams = mediaSource.MediaStreams.Where(i => i.Type == MediaStreamType.Subtitle).ToList();
+                    var mksStreams = streams.Where(i => !string.IsNullOrEmpty(i.Path) && i.Path.EndsWith(".mks", StringComparison.OrdinalIgnoreCase)).ToList();
+                    var mksPaths = mksStreams.Select(i => i.Path).ToList();
+                    if (mksPaths.Count > 0)
+                    {
+                        foreach (var path in mksPaths)
+                        {
+                            await _extractor.ExtractAllAttachments(path, mediaSource, cancellationToken).ConfigureAwait(false);
+                        }
+                    }
+
+                    if (streams.Count != mksStreams.Count)
+                    {
+                        await _extractor.ExtractAllAttachments(mediaSource.Path, mediaSource, cancellationToken).ConfigureAwait(false);
+                    }
                 }
 
                 completedVideos++;

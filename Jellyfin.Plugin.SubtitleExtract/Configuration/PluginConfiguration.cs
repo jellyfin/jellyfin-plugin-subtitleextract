@@ -15,7 +15,7 @@ public class PluginConfiguration : BasePluginConfiguration
     }
 
     /// <summary>
-    /// Gets or sets a value indicating whether or not to extract subtitles as part of library scan.
+    /// Gets or sets a value indicating whether or not to extract subtitles and attachments as part of library scan.
     /// default = false.
     /// </summary>
     public bool ExtractionDuringLibraryScan { get; set; } = false;
