@@ -1,10 +1,10 @@
 using System.Threading;
 using System.Threading.Tasks;
-using Jellyfin.Plugin.SubtitleExtract.Tools;
 using MediaBrowser.Controller.Entities;
 using MediaBrowser.Controller.Entities.Movies;
 using MediaBrowser.Controller.Entities.TV;
 using MediaBrowser.Controller.Library;
+using MediaBrowser.Controller.MediaEncoding;
 using MediaBrowser.Controller.Providers;
 using Microsoft.Extensions.Logging;
 
@@ -22,23 +22,23 @@ public class SubtitleExtractionProvider : ICustomMetadataProvider<Episode>,
 {
     private readonly ILogger<SubtitleExtractionProvider> _logger;
 
-    private readonly SubtitleExtractor _extractor;
+    private readonly ISubtitleEncoder _encoder;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="SubtitleExtractionProvider"/> class.
     /// </summary>
-    /// <param name="subtitlesExtractor"><see cref="SubtitleExtractor"/> instance.</param>
+    /// <param name="subtitleEncoder"><see cref="ISubtitleEncoder"/> instance.</param>
     /// <param name="logger">Instance of the <see cref="ILogger"/> interface.</param>
     public SubtitleExtractionProvider(
-        SubtitleExtractor subtitlesExtractor,
+        ISubtitleEncoder subtitleEncoder,
         ILogger<SubtitleExtractionProvider> logger)
     {
         _logger = logger;
-        _extractor = subtitlesExtractor;
+        _encoder = subtitleEncoder;
     }
 
     /// <inheritdoc />
-    public string Name => SubtitleExtractPlugin.Current.Name;
+    public string Name => "SubtitleExtractionProvider";
 
     /// <summary>
     /// Gets the order in which the provider should be called. (Core provider is = 100).
@@ -51,7 +51,7 @@ public class SubtitleExtractionProvider : ICustomMetadataProvider<Episode>,
         if (item.IsFileProtocol)
         {
             var file = directoryService.GetFile(item.Path);
-            if (file != null && item.DateModified != file.LastWriteTimeUtc)
+            if (file != null && (item.DateModified != file.LastWriteTimeUtc || item.Size != file.Length))
             {
                 return true;
             }
@@ -86,7 +86,10 @@ public class SubtitleExtractionProvider : ICustomMetadataProvider<Episode>,
         {
             _logger.LogDebug("Extracting subtitles for: {Video}", item.Path);
 
-            await _extractor.Run(item, cancellationToken).ConfigureAwait(false);
+            foreach (var mediaSource in item.GetMediaSources(false))
+            {
+                await _encoder.ExtractAllExtractableSubtitles(mediaSource, cancellationToken).ConfigureAwait(false);
+            }
 
             _logger.LogDebug("Finished subtitle extraction for: {Video}", item.Path);
         }
