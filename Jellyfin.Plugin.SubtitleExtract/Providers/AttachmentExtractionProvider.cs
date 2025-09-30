@@ -41,7 +41,7 @@ public class AttachmentExtractionProvider : ICustomMetadataProvider<Episode>,
     }
 
     /// <inheritdoc />
-    public string Name => "AttachmentExtractionProvider";
+    public string Name => "Attachment Extractor";
 
     /// <summary>
     /// Gets the order in which the provider should be called. (Core provider is = 100).
@@ -87,7 +87,7 @@ public class AttachmentExtractionProvider : ICustomMetadataProvider<Episode>,
 
         if (config.ExtractionDuringLibraryScan)
         {
-            _logger.LogDebug("Extracting subtitles for: {Video}", item.Path);
+            _logger.LogDebug("Extracting attachments for: {Video}", item.Path);
             foreach (var mediaSource in item.GetMediaSources(false))
             {
                 var streams = mediaSource.MediaStreams.Where(i => i.Type == MediaStreamType.Subtitle).ToList();
@@ -107,7 +107,7 @@ public class AttachmentExtractionProvider : ICustomMetadataProvider<Episode>,
                 }
             }
 
-            _logger.LogDebug("Finished subtitle extraction for: {Video}", item.Path);
+            _logger.LogDebug("Finished attachment extraction for: {Video}", item.Path);
         }
 
         return ItemUpdateType.None;
