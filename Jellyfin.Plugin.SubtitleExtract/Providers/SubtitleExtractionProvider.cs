@@ -38,7 +38,7 @@ public class SubtitleExtractionProvider : ICustomMetadataProvider<Episode>,
     }
 
     /// <inheritdoc />
-    public string Name => "SubtitleExtractionProvider";
+    public string Name => "Subtitle Extraction";
 
     /// <summary>
     /// Gets the order in which the provider should be called. (Core provider is = 100).
