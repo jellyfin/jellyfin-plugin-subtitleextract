@@ -23,7 +23,7 @@ public class AttachmentExtractionProvider : ICustomMetadataProvider<Episode>,
     IHasOrder,
     IForcedProvider
 {
-    private readonly ILogger<SubtitleExtractionProvider> _logger;
+    private readonly ILogger<AttachmentExtractionProvider> _logger;
 
     private readonly IAttachmentExtractor _extractor;
 
@@ -34,7 +34,7 @@ public class AttachmentExtractionProvider : ICustomMetadataProvider<Episode>,
     /// <param name="logger">Instance of the <see cref="ILogger"/> interface.</param>
     public AttachmentExtractionProvider(
         IAttachmentExtractor attachmentExtractor,
-        ILogger<SubtitleExtractionProvider> logger)
+        ILogger<AttachmentExtractionProvider> logger)
     {
         _logger = logger;
         _extractor = attachmentExtractor;
@@ -66,22 +66,22 @@ public class AttachmentExtractionProvider : ICustomMetadataProvider<Episode>,
     /// <inheritdoc/>
     public Task<ItemUpdateType> FetchAsync(Episode item, MetadataRefreshOptions options, CancellationToken cancellationToken)
     {
-        return FetchSubtitles(item, cancellationToken);
+        return FetchAttachments(item, cancellationToken);
     }
 
     /// <inheritdoc/>
     public Task<ItemUpdateType> FetchAsync(Movie item, MetadataRefreshOptions options, CancellationToken cancellationToken)
     {
-        return FetchSubtitles(item, cancellationToken);
+        return FetchAttachments(item, cancellationToken);
     }
 
     /// <inheritdoc/>
     public Task<ItemUpdateType> FetchAsync(Video item, MetadataRefreshOptions options, CancellationToken cancellationToken)
     {
-        return FetchSubtitles(item, cancellationToken);
+        return FetchAttachments(item, cancellationToken);
     }
 
-    private async Task<ItemUpdateType> FetchSubtitles(BaseItem item, CancellationToken cancellationToken)
+    private async Task<ItemUpdateType> FetchAttachments(BaseItem item, CancellationToken cancellationToken)
     {
         var config = SubtitleExtractPlugin.Current!.Configuration;
 
