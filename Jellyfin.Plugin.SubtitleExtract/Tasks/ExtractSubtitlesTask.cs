@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Jellyfin.Data.Enums;
@@ -7,6 +8,8 @@ using MediaBrowser.Controller.Dto;
 using MediaBrowser.Controller.Entities;
 using MediaBrowser.Controller.Library;
 using MediaBrowser.Controller.MediaEncoding;
+using MediaBrowser.Model.Dto;
+using MediaBrowser.Model.Entities;
 using MediaBrowser.Model.Globalization;
 using MediaBrowser.Model.Tasks;
 
@@ -65,6 +68,44 @@ public class ExtractSubtitlesTask : IScheduledTask
     /// <inheritdoc />
     public async Task ExecuteAsync(IProgress<double> progress, CancellationToken cancellationToken)
     {
+        var startProgress = 0d;
+
+        var config = SubtitleExtractPlugin.Current!.Configuration;
+        var libs = config.SelectedSubtitlesLibraries.Split(",").Select(v => v.Trim()).Where(v => !string.IsNullOrEmpty(v)).ToList();
+
+        List<string> parentIds = [];
+        if (libs.Count > 0)
+        {
+            // Try to get parent ids from the selected libraries
+            parentIds = _libraryManager.GetVirtualFolders().Where(vf => libs.Contains(vf.Name)).Select(vf => vf.ItemId).ToList();
+        }
+
+        if (parentIds.Count > 0)
+        {
+            // In case parent ids are found, run the extraction on each found library
+            foreach (var parentId in parentIds)
+            {
+                startProgress = await RunExtractionWithProgress(progress, parentId, parentIds, startProgress, cancellationToken).ConfigureAwait(false);
+            }
+        }
+        else
+        {
+            // Otherwise run it on everything
+            await RunExtractionWithProgress(progress, null, [], startProgress, cancellationToken).ConfigureAwait(false);
+        }
+
+        progress.Report(100);
+    }
+
+    private async Task<double> RunExtractionWithProgress(
+        IProgress<double> progress,
+        string? parentId,
+        List<string> parentIds,
+        double startProgress,
+        CancellationToken cancellationToken)
+    {
+        var libsCount = parentIds.Count > 0 ? parentIds.Count : 1;
+
         var query = new InternalItemsQuery
         {
             Recursive = true,
@@ -74,8 +115,17 @@ public class ExtractSubtitlesTask : IScheduledTask
             DtoOptions = _dtoOptions,
             MediaTypes = _mediaTypes,
             SourceTypes = _sourceTypes,
-            Limit = QueryPageLimit,
+            Limit = QueryPageLimit
         };
+
+        var config = SubtitleExtractPlugin.Current.Configuration;
+        var codecs = config.IncludedCodecs.Trim().Split(",").Select(v => v.Trim()).Where(v => !string.IsNullOrEmpty(v)).ToList();
+
+        if (parentIds.Count > 0 && parentId != null)
+        {
+            // In case parent is provided, add its Guid to the query
+            query.ParentId = Guid.ParseExact(parentId, "N");
+        }
 
         var numberOfVideos = _libraryManager.GetCount(query);
 
@@ -91,18 +141,33 @@ public class ExtractSubtitlesTask : IScheduledTask
             {
                 cancellationToken.ThrowIfCancellationRequested();
 
-                foreach (var mediaSource in video.GetMediaSources(false))
+                foreach (var mediaSource in video.GetMediaSources(false).Where(source => FilterMediasWithCodec(codecs, source)))
                 {
                     await _encoder.ExtractAllExtractableSubtitles(mediaSource, cancellationToken).ConfigureAwait(false);
                 }
 
                 completedVideos++;
-                progress.Report(100d * completedVideos / numberOfVideos);
+
+                // Report the progress using "startProgress" that allows to track progress across multiple libraries
+                progress.Report(startProgress + (100d * completedVideos / numberOfVideos / libsCount));
             }
 
             startIndex += QueryPageLimit;
         }
 
-        progress.Report(100);
+        // When done, update the startProgress to the current progress for next libraries
+        startProgress += 100d * completedVideos / numberOfVideos / libsCount;
+        return startProgress;
+    }
+
+    /// <summary>
+    /// Filters given media depending on a subtitle stream containing one of the given codecs.
+    /// </summary>
+    /// <param name="codecs">The list of codecs to check.</param>
+    /// <param name="source">the media source.</param>
+    /// <returns>True if media should be handled.</returns>
+    private static bool FilterMediasWithCodec(List<string> codecs, MediaSourceInfo source)
+    {
+        return codecs.Count == 0 || source.MediaStreams.Any(stream => stream.Type == MediaStreamType.Subtitle && codecs.Contains(stream.Codec));
     }
 }
