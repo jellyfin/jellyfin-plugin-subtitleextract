@@ -162,7 +162,7 @@ public class ExtractSubtitlesTask : IScheduledTask
     }
 
     /// <summary>
-    /// Filters given media depending on codecs to include or exclude.
+    /// Filters given media depending on codecs to include.
     /// </summary>
     /// <param name="selectedCodecs">The list of codecs to include.</param>
     /// <param name="source">the media source.</param>
