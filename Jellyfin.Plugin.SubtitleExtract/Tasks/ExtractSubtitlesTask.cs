@@ -119,7 +119,8 @@ public class ExtractSubtitlesTask : IScheduledTask
         };
 
         var config = SubtitleExtractPlugin.Current.Configuration;
-        var codecs = config.IncludedCodecs.Trim().Split(",").Select(v => v.Trim()).Where(v => !string.IsNullOrEmpty(v)).ToList();
+        var includedCodecs = config.IncludedCodecs.Trim().Split(",").Select(v => v.Trim()).Where(v => !string.IsNullOrEmpty(v)).ToList();
+        var excludedCodecs = config.ExcludedCodecs.Trim().Split(",").Select(v => v.Trim()).Where(v => !string.IsNullOrEmpty(v)).ToList();
 
         if (parentIds.Count > 0 && parentId != null)
         {
@@ -141,7 +142,7 @@ public class ExtractSubtitlesTask : IScheduledTask
             {
                 cancellationToken.ThrowIfCancellationRequested();
 
-                foreach (var mediaSource in video.GetMediaSources(false).Where(source => FilterMediasWithCodec(codecs, source)))
+                foreach (var mediaSource in video.GetMediaSources(false).Where(source => FilterMediasWithCodec(includedCodecs, excludedCodecs, source)))
                 {
                     await _encoder.ExtractAllExtractableSubtitles(mediaSource, cancellationToken).ConfigureAwait(false);
                 }
@@ -161,13 +162,21 @@ public class ExtractSubtitlesTask : IScheduledTask
     }
 
     /// <summary>
-    /// Filters given media depending on a subtitle stream containing one of the given codecs.
+    /// Filters given media depending on codecs to include or exclude.
     /// </summary>
-    /// <param name="codecs">The list of codecs to check.</param>
+    /// <param name="includedCodecs">The list of codecs to include.</param>
+    /// <param name="excludedCodecs">The list of codecs to exclude.</param>
     /// <param name="source">the media source.</param>
     /// <returns>True if media should be handled.</returns>
-    private static bool FilterMediasWithCodec(List<string> codecs, MediaSourceInfo source)
+    private static bool FilterMediasWithCodec(List<string> includedCodecs, List<string> excludedCodecs, MediaSourceInfo source)
     {
-        return codecs.Count == 0 || source.MediaStreams.Any(stream => stream.Type == MediaStreamType.Subtitle && codecs.Contains(stream.Codec));
+        if (includedCodecs.Count == 0 && excludedCodecs.Count == 0)
+        {
+            return true;
+        }
+
+        var hasIncludedCodecs = includedCodecs.Count == 0 || source.MediaStreams.Any(stream => stream.Type == MediaStreamType.Subtitle && includedCodecs.Contains(stream.Codec, StringComparer.CurrentCultureIgnoreCase));
+        var hasExcludedCodecs = excludedCodecs.Count > 0 && source.MediaStreams.Any(stream => stream.Type == MediaStreamType.Subtitle && excludedCodecs.Contains(stream.Codec, StringComparer.CurrentCultureIgnoreCase));
+        return hasIncludedCodecs && !hasExcludedCodecs;
     }
 }

@@ -117,9 +117,6 @@ public class ExtractAttachmentsTask : IScheduledTask
             Limit = QueryPageLimit
         };
 
-        var config = SubtitleExtractPlugin.Current!.Configuration;
-        var codecs = config.IncludedCodecs.Trim().Split(",").Select(v => v.Trim()).Where(v => !string.IsNullOrEmpty(v)).ToList();
-
         if (parentIds.Count > 0 && parentId != null)
         {
             // In case parent is provided, add its Guid to the query
