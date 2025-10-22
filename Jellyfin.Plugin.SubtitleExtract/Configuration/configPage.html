@@ -38,50 +38,19 @@
                         <input id="SelectedAttachmentsLibraries" type="hidden" is="emby-input" />
                     </div>
 
-                    <div class="inputContainer" id="includedCodecsList">
-                        <label class="inputLabel inputLabelUnfocused" for="IncludedCodecs"> Included Codecs </label>
-                        <input id="IncludedCodecs" type="text" is="emby-input" />
-                        <div class="fieldDescription">
-                            Limit subtitle extraction to media containing a stream of the following codecs (separated by a comma).
-                            An empty list means that all codecs are included.
+                    <details id="codecs">
+                        <summary style="cursor: pointer; padding: 10px; width: inherit; margin: auto; border: none; text-align: center; font-size: 1em; outline: 2px solid rgba(155, 155, 155, 0.5);">
+                            Codecs to include in extraction
+                        </summary>
+                        <div class="folderAccessListContainer" style="margin-bottom: -1em;">
+                            <div class="folderAccess">
+                                <h3 class="checkboxListLabel">Limit subtitle extraction to media with all subtitle streams matching the selected codecs.</h3>
+                                <div class="checkboxList paperList" style="padding: 0.5em 1em;" id="includedCodecsCheckboxes"></div>
+                            </div>
+                            <label class="inputLabel" for="SelectedCodecs"></label>
+                            <input id="SelectedCodecs" type="hidden" is="emby-input" />
                         </div>
-                    </div>
-
-                    <div class="inputContainer" id="excludedCodecsList">
-                        <label class="inputLabel inputLabelUnfocused" for="ExcludedCodecs"> Excluded Codecs </label>
-                        <input id="ExcludedCodecs" type="text" is="emby-input" />
-                        <div class="fieldDescription">
-                            Exclude medias with a stream of the following codecs from extraction (separated by a comma).
-                            An empty list means that no codec is excluded.
-                            <br />
-                            <br />
-                            Here is a list of all possible codecs, starting with the most popular ones:
-                            <ul>
-                                <li>ass: ASS (Advanced SSA) subtitle (.ass &amp; .ssa files, often found on anime)</li>
-                                <li>DVDSUB: DVD subtitles</li>
-                                <li>subrip: SubRip subtitle (.srt files, most common type of subtitles)</li>
-                                <li>PGSSUB: HDMV Presentation Graphic Stream subtitles (often found on Blu-ray)</li>
-                            </ul>
-                            <ul>
-                                <li>DVBSUB: DVB subtitles</li>
-                                <li>eia_608: EIA-608 closed captions</li>
-                                <li>jacosub: JACOsub subtitle</li>
-                                <li>microdvd: MicroDVD subtitle</li>
-                                <li>mov_text: MOV text</li>
-                                <li>mpl2: MPL2 subtitle</li>
-                                <li>pjs: PJS (Phoenix Japanimation Society) subtitle</li>
-                                <li>realtext: RealText subtitle</li>
-                                <li>sami: SAMI subtitle</li>
-                                <li>stl: Spruce subtitle format</li>
-                                <li>subviewer: SubViewer subtitle</li>
-                                <li>subviewer1: SubViewer v1 subtitle</li>
-                                <li>text: raw UTF-8 text</li>
-                                <li>vplayer: VPlayer subtitle</li>
-                                <li>webvtt: WebVTT subtitle</li>
-                                <li>xsub: XSUB</li>
-                            </ul>
-                        </div>
-                    </div>
+                    </details>
 
                     <br />
                     <div>
@@ -92,7 +61,6 @@
         </div>
 
         <script type="text/javascript">
-
             function updateList(textField, container) {
                 textField.value = Array.from(container.querySelectorAll('input[type="checkbox"]:checked'))
                     .map((checkbox) => checkbox.nextElementSibling.textContent)
@@ -172,13 +140,14 @@
                     Dashboard.showLoadingMsg();
 
                     ApiClient.getPluginConfiguration(pluginId).then(function (config) {
-                        populateLibraries();
+                        populateLibraries(config);
 
                         page.querySelector('#chkEnableDuringScan').checked = !!config.ExtractionDuringLibraryScan;
                         document.querySelector("#SelectedSubtitlesLibraries").value = config.SelectedSubtitlesLibraries;
                         document.querySelector("#SelectedAttachmentsLibraries").value = config.SelectedAttachmentsLibraries;
-                        document.querySelector("#IncludedCodecs").value = config.IncludedCodecs;
-                        document.querySelector("#ExcludedCodecs").value = config.ExcludedCodecs;
+                        document.querySelector("#SelectedCodecs").value = config.SelectedCodecs;
+
+                        generateCheckboxList(config.AllSubtitleCodecs.split('#'), "includedCodecsCheckboxes", "SelectedCodecs");
 
                         Dashboard.hideLoadingMsg();
                     });
@@ -194,8 +163,7 @@
                         config.ExtractionDuringLibraryScan = form.querySelector('#chkEnableDuringScan').checked;
                         config.SelectedSubtitlesLibraries = document.querySelector("#SelectedSubtitlesLibraries").value;
                         config.SelectedAttachmentsLibraries = document.querySelector("#SelectedAttachmentsLibraries").value;
-                        config.IncludedCodecs = document.querySelector("#IncludedCodecs").value;
-                        config.ExcludedCodecs = document.querySelector("#ExcludedCodecs").value;
+                        config.SelectedCodecs = document.querySelector("#SelectedCodecs").value;
 
                         ApiClient.updatePluginConfiguration(pluginId, config).then(Dashboard.processPluginConfigurationUpdateResult);
                     });

@@ -119,8 +119,7 @@ public class ExtractSubtitlesTask : IScheduledTask
         };
 
         var config = SubtitleExtractPlugin.Current.Configuration;
-        var includedCodecs = config.IncludedCodecs.Trim().Split(",").Select(v => v.Trim()).Where(v => !string.IsNullOrEmpty(v)).ToList();
-        var excludedCodecs = config.ExcludedCodecs.Trim().Split(",").Select(v => v.Trim()).Where(v => !string.IsNullOrEmpty(v)).ToList();
+        var selectedCodecs = config.SelectedCodecs.Trim().Split(",").Select(v => v.Split('-')[0].Trim()).Where(v => !string.IsNullOrEmpty(v)).ToList();
 
         if (parentIds.Count > 0 && parentId != null)
         {
@@ -142,7 +141,7 @@ public class ExtractSubtitlesTask : IScheduledTask
             {
                 cancellationToken.ThrowIfCancellationRequested();
 
-                foreach (var mediaSource in video.GetMediaSources(false).Where(source => FilterMediasWithCodec(includedCodecs, excludedCodecs, source)))
+                foreach (var mediaSource in video.GetMediaSources(false).Where(source => FilterMediasWithCodec(selectedCodecs, source)))
                 {
                     await _encoder.ExtractAllExtractableSubtitles(mediaSource, cancellationToken).ConfigureAwait(false);
                 }
@@ -164,14 +163,11 @@ public class ExtractSubtitlesTask : IScheduledTask
     /// <summary>
     /// Filters given media depending on codecs to include or exclude.
     /// </summary>
-    /// <param name="includedCodecs">The list of codecs to include.</param>
-    /// <param name="excludedCodecs">The list of codecs to exclude.</param>
+    /// <param name="selectedCodecs">The list of codecs to include.</param>
     /// <param name="source">the media source.</param>
     /// <returns>True if media should be handled.</returns>
-    private static bool FilterMediasWithCodec(List<string> includedCodecs, List<string> excludedCodecs, MediaSourceInfo source)
+    private static bool FilterMediasWithCodec(List<string> selectedCodecs, MediaSourceInfo source)
     {
-        var hasIncludedCodecs = includedCodecs.Count == 0 || source.MediaStreams.Any(stream => stream.Type == MediaStreamType.Subtitle && includedCodecs.Contains(stream.Codec, StringComparer.CurrentCultureIgnoreCase));
-        var hasExcludedCodecs = excludedCodecs.Count > 0 && source.MediaStreams.Any(stream => stream.Type == MediaStreamType.Subtitle && excludedCodecs.Contains(stream.Codec, StringComparer.CurrentCultureIgnoreCase));
-        return hasIncludedCodecs && !hasExcludedCodecs;
+        return source.MediaStreams.Where(stream => stream.Type == MediaStreamType.Subtitle).All(stream => selectedCodecs.Contains(stream.Codec, StringComparer.CurrentCultureIgnoreCase));
     }
 }
