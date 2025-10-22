@@ -170,11 +170,6 @@ public class ExtractSubtitlesTask : IScheduledTask
     /// <returns>True if media should be handled.</returns>
     private static bool FilterMediasWithCodec(List<string> includedCodecs, List<string> excludedCodecs, MediaSourceInfo source)
     {
-        if (includedCodecs.Count == 0 && excludedCodecs.Count == 0)
-        {
-            return true;
-        }
-
         var hasIncludedCodecs = includedCodecs.Count == 0 || source.MediaStreams.Any(stream => stream.Type == MediaStreamType.Subtitle && includedCodecs.Contains(stream.Codec, StringComparer.CurrentCultureIgnoreCase));
         var hasExcludedCodecs = excludedCodecs.Count > 0 && source.MediaStreams.Any(stream => stream.Type == MediaStreamType.Subtitle && excludedCodecs.Contains(stream.Codec, StringComparer.CurrentCultureIgnoreCase));
         return hasIncludedCodecs && !hasExcludedCodecs;
