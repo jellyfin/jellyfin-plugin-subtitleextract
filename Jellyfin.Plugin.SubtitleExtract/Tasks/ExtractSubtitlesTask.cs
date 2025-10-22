@@ -119,6 +119,7 @@ public class ExtractSubtitlesTask : IScheduledTask
         };
 
         var config = SubtitleExtractPlugin.Current.Configuration;
+        // Values are stored separated by comma, and we only need the part before the dash as it is the codec's name.
         var selectedCodecs = config.SelectedCodecs.Trim().Split(",").Select(v => v.Split('-')[0].Trim()).Where(v => !string.IsNullOrEmpty(v)).ToList();
 
         if (parentIds.Count > 0 && parentId != null)
