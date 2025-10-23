@@ -60,4 +60,19 @@ public class PluginConfiguration : BasePluginConfiguration
     /// Gets or sets the list of codecs to include when extracting subtitle from a media.
     /// </summary>
     public string SelectedCodecs { get; set; } = string.Join(", ", _allSubtitleCodecs);
+
+    /// <summary>
+    /// Gets or sets a value indicating whether advanced codec selection mode is enabled.
+    /// </summary>
+    public bool IsAdvancedMode { get; set; }
+
+    /// <summary>
+    /// Gets or sets a value indicating whether advanced codec selection mode is enabled.
+    /// </summary>
+    public bool IncludeTextSubtitles { get; set; } = true;
+
+    /// <summary>
+    /// Gets or sets a value indicating whether advanced codec selection mode is enabled.
+    /// </summary>
+    public bool IncludeGraphicalSubtitles { get; set; } = true;
 }

@@ -121,6 +121,9 @@ public class ExtractSubtitlesTask : IScheduledTask
         var config = SubtitleExtractPlugin.Current.Configuration;
         // Values are stored separated by comma, and we only need the part before the dash as it is the codec's name.
         var selectedCodecs = config.SelectedCodecs.Trim().Split(",").Select(v => v.Split('-')[0].Trim()).Where(v => !string.IsNullOrEmpty(v)).ToList();
+        var isAdvancedCodecSelection = config.IsAdvancedMode;
+        var includeTextSubtitles = config.IncludeTextSubtitles;
+        var includeGraphicalSubtitles = config.IncludeGraphicalSubtitles;
 
         if (parentIds.Count > 0 && parentId != null)
         {
@@ -142,7 +145,7 @@ public class ExtractSubtitlesTask : IScheduledTask
             {
                 cancellationToken.ThrowIfCancellationRequested();
 
-                foreach (var mediaSource in video.GetMediaSources(false).Where(source => FilterMediasWithCodec(selectedCodecs, source)))
+                foreach (var mediaSource in video.GetMediaSources(false).Where(source => FilterMediasWithCodec(isAdvancedCodecSelection, includeTextSubtitles, includeGraphicalSubtitles, selectedCodecs, source)))
                 {
                     await _encoder.ExtractAllExtractableSubtitles(mediaSource, cancellationToken).ConfigureAwait(false);
                 }
@@ -164,11 +167,20 @@ public class ExtractSubtitlesTask : IScheduledTask
     /// <summary>
     /// Filters given media depending on codecs to include.
     /// </summary>
+    /// <param name="isAdvancedMode">Whether to check codec or just subtitle type.</param>
+    /// <param name="includeTextSubtitles">Whether to include text subtitles.</param>
+    /// <param name="includeGraphicalSubtitles">Whether to include graphical subtitles.</param>
     /// <param name="selectedCodecs">The list of codecs to include.</param>
     /// <param name="source">the media source.</param>
     /// <returns>True if media should be handled.</returns>
-    private static bool FilterMediasWithCodec(List<string> selectedCodecs, MediaSourceInfo source)
+    private static bool FilterMediasWithCodec(bool isAdvancedMode, bool includeTextSubtitles, bool includeGraphicalSubtitles, List<string> selectedCodecs, MediaSourceInfo source)
     {
-        return source.MediaStreams.Where(stream => stream.Type == MediaStreamType.Subtitle).All(stream => selectedCodecs.Contains(stream.Codec, StringComparer.CurrentCultureIgnoreCase));
+        var subtitleStreams = source.MediaStreams.Where(stream => stream.Type == MediaStreamType.Subtitle).ToList();
+        if (!isAdvancedMode)
+        {
+            return (includeTextSubtitles && subtitleStreams.All(stream => stream.IsTextSubtitleStream)) || (includeGraphicalSubtitles && subtitleStreams.Any(stream => !stream.IsTextSubtitleStream));
+        }
+
+        return subtitleStreams.All(stream => selectedCodecs.Contains(stream.Codec, StringComparer.CurrentCultureIgnoreCase));
     }
 }
