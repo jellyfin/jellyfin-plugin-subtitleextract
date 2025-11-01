@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Jellyfin.Data.Enums;
+using Jellyfin.Extensions;
 using MediaBrowser.Controller.Dto;
 using MediaBrowser.Controller.Entities;
 using MediaBrowser.Controller.Library;
@@ -70,16 +71,19 @@ public class ExtractAttachmentsTask : IScheduledTask
         var startProgress = 0d;
 
         var config = SubtitleExtractPlugin.Current.Configuration;
-        var libs = config.SelectedAttachmentsLibraries.Split(",").Select(v => v.Trim()).Where(v => !string.IsNullOrEmpty(v)).ToList();
+        var libs = config.SelectedAttachmentsLibraries;
 
-        List<string> parentIds = [];
-        if (libs.Count > 0)
+        Guid[] parentIds = [];
+        if (libs.Length > 0)
         {
             // Try to get parent ids from the selected libraries
-            parentIds = _libraryManager.GetVirtualFolders().Where(vf => libs.Contains(vf.Name)).Select(vf => vf.ItemId).ToList();
+            parentIds = _libraryManager.GetVirtualFolders()
+                .Where(vf => libs.Contains(vf.Name))
+                .Select(vf => Guid.Parse(vf.ItemId))
+                .ToArray();
         }
 
-        if (parentIds.Count > 0)
+        if (parentIds.Length > 0)
         {
             // In case parent ids are found, run the extraction on each found library
             foreach (var parentId in parentIds)
@@ -98,8 +102,8 @@ public class ExtractAttachmentsTask : IScheduledTask
 
     private async Task<double> RunExtractionWithProgress(
         IProgress<double> progress,
-        string? parentId,
-        List<string> parentIds,
+        Guid? parentId,
+        IReadOnlyCollection<Guid> parentIds,
         double startProgress,
         CancellationToken cancellationToken)
     {
@@ -114,13 +118,12 @@ public class ExtractAttachmentsTask : IScheduledTask
             DtoOptions = _dtoOptions,
             MediaTypes = _mediaTypes,
             SourceTypes = _sourceTypes,
-            Limit = QueryPageLimit
+            Limit = QueryPageLimit,
         };
 
-        if (parentIds.Count > 0 && parentId != null)
+        if (!parentId.IsNullOrEmpty())
         {
-            // In case parent is provided, add its Guid to the query
-            query.ParentId = Guid.ParseExact(parentId, "N");
+            query.ParentId = parentId.Value;
         }
 
         var numberOfVideos = _libraryManager.GetCount(query);

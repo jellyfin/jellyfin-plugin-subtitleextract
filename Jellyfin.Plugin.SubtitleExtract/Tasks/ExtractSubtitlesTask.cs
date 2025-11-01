@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Jellyfin.Data.Enums;
+using Jellyfin.Extensions;
 using MediaBrowser.Controller.Dto;
 using MediaBrowser.Controller.Entities;
 using MediaBrowser.Controller.Library;
@@ -70,17 +71,20 @@ public class ExtractSubtitlesTask : IScheduledTask
     {
         var startProgress = 0d;
 
-        var config = SubtitleExtractPlugin.Current!.Configuration;
-        var libs = config.SelectedSubtitlesLibraries.Split(",").Select(v => v.Trim()).Where(v => !string.IsNullOrEmpty(v)).ToList();
+        var config = SubtitleExtractPlugin.Current.Configuration;
+        var libs = config.SelectedSubtitlesLibraries;
 
-        List<string> parentIds = [];
-        if (libs.Count > 0)
+        Guid[] parentIds = [];
+        if (libs.Length > 0)
         {
             // Try to get parent ids from the selected libraries
-            parentIds = _libraryManager.GetVirtualFolders().Where(vf => libs.Contains(vf.Name)).Select(vf => vf.ItemId).ToList();
+            parentIds = _libraryManager.GetVirtualFolders()
+                .Where(vf => libs.Contains(vf.Name))
+                .Select(vf => Guid.Parse(vf.ItemId))
+                .ToArray();
         }
 
-        if (parentIds.Count > 0)
+        if (parentIds.Length > 0)
         {
             // In case parent ids are found, run the extraction on each found library
             foreach (var parentId in parentIds)
@@ -99,8 +103,8 @@ public class ExtractSubtitlesTask : IScheduledTask
 
     private async Task<double> RunExtractionWithProgress(
         IProgress<double> progress,
-        string? parentId,
-        List<string> parentIds,
+        Guid? parentId,
+        IReadOnlyCollection<Guid> parentIds,
         double startProgress,
         CancellationToken cancellationToken)
     {
@@ -120,15 +124,15 @@ public class ExtractSubtitlesTask : IScheduledTask
 
         var config = SubtitleExtractPlugin.Current.Configuration;
         // Values are stored separated by comma, and we only need the part before the dash as it is the codec's name.
-        var selectedCodecs = config.SelectedCodecs.Trim().Split(",").Select(v => v.Split('-')[0].Trim()).Where(v => !string.IsNullOrEmpty(v)).ToList();
+        string[] selectedCodecs = config.SelectedCodecs;
+
         var isAdvancedCodecSelection = config.IsAdvancedMode;
         var includeTextSubtitles = config.IncludeTextSubtitles;
         var includeGraphicalSubtitles = config.IncludeGraphicalSubtitles;
 
-        if (parentIds.Count > 0 && parentId != null)
+        if (!parentId.IsNullOrEmpty())
         {
-            // In case parent is provided, add its Guid to the query
-            query.ParentId = Guid.ParseExact(parentId, "N");
+            query.ParentId = parentId.Value;
         }
 
         var numberOfVideos = _libraryManager.GetCount(query);
@@ -173,14 +177,14 @@ public class ExtractSubtitlesTask : IScheduledTask
     /// <param name="selectedCodecs">The list of codecs to include.</param>
     /// <param name="source">the media source.</param>
     /// <returns>True if media should be handled.</returns>
-    private static bool FilterMediasWithCodec(bool isAdvancedMode, bool includeTextSubtitles, bool includeGraphicalSubtitles, List<string> selectedCodecs, MediaSourceInfo source)
+    private static bool FilterMediasWithCodec(bool isAdvancedMode, bool includeTextSubtitles, bool includeGraphicalSubtitles, IReadOnlyCollection<string> selectedCodecs, MediaSourceInfo source)
     {
-        var subtitleStreams = source.MediaStreams.Where(stream => stream.Type == MediaStreamType.Subtitle).ToList();
+        var subtitleStreams = source.MediaStreams.Where(stream => stream.Type == MediaStreamType.Subtitle).ToArray();
         if (!isAdvancedMode)
         {
             return (includeTextSubtitles && subtitleStreams.All(stream => stream.IsTextSubtitleStream)) || (includeGraphicalSubtitles && subtitleStreams.Any(stream => !stream.IsTextSubtitleStream));
         }
 
-        return subtitleStreams.All(stream => selectedCodecs.Contains(stream.Codec, StringComparer.CurrentCultureIgnoreCase));
+        return subtitleStreams.All(stream => selectedCodecs.Contains(stream.Codec, StringComparer.OrdinalIgnoreCase));
     }
 }
