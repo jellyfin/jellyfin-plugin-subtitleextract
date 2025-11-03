@@ -25,8 +25,6 @@
                         <h3 class="checkboxListLabel">Limit subtitle extraction to the following libraries (if nothing is selected, all libraries will be included)</h3>
                         <div class="checkboxList paperList" style="padding: 0.5em 1em;" id="librarySubtitlesCheckboxes"></div>
                     </div>
-                    <label class="inputLabel" for="SelectedSubtitlesLibraries"></label>
-                    <input id="SelectedSubtitlesLibraries" type="hidden" is="emby-input"/>
                 </div>
 
                 <div class="folderAccessListContainer" style="margin-bottom: -1em;">
@@ -34,8 +32,6 @@
                         <h3 class="checkboxListLabel">Limit attachment extraction to the following libraries (if nothing is selected, all libraries will be included)</h3>
                         <div class="checkboxList paperList" style="padding: 0.5em 1em;" id="libraryAttachmentsCheckboxes"></div>
                     </div>
-                    <label class="inputLabel" for="SelectedAttachmentsLibraries"></label>
-                    <input id="SelectedAttachmentsLibraries" type="hidden" is="emby-input"/>
                 </div>
 
                 <!-- Easy Mode Section -->
@@ -76,8 +72,6 @@
                             <h3 class="checkboxListLabel">Limit subtitle extraction to media with all subtitle streams matching the selected codecs.</h3>
                             <div class="checkboxList paperList" style="padding: 0.5em 1em;" id="includedCodecsCheckboxes"></div>
                         </div>
-                        <label class="inputLabel" for="SelectedCodecs"></label>
-                        <input id="SelectedCodecs" type="hidden" is="emby-input"/>
                     </div>
                 </details>
 
@@ -90,72 +84,25 @@
     </div>
 
     <script type="text/javascript">
-        function updateList(textField, container) {
-            textField.value = Array.from(container.querySelectorAll('input[type="checkbox"]:checked'))
-                .map((checkbox) => checkbox.nextElementSibling.textContent)
-                .join(", ");
-        }
-
-        function generateCheckboxList(items, containerId, textFieldId) {
+        function generateCheckboxList(items, selectedItems, containerId) {
             const container = document.getElementById(containerId);
-            const checkedItems = new Set(document.getElementById(textFieldId).value.split(", ").filter(Boolean));
             const fragment = document.createDocumentFragment();
             for (const item of items) {
                 const label = document.createElement("label");
                 label.className = "emby-checkbox-label";
-                label.innerHTML = '<input type="checkbox" is="emby-checkbox"' + (checkedItems.has(item) ? " checked" : "") + ">" + '<span class="checkboxLabel">' + item + "</span>";
+                label.innerHTML = '<input type="checkbox" is="emby-checkbox"' + (selectedItems.includes(item.Value) ? " checked" : "") + ' value="' + item.Value + '"><span class="checkboxLabel">' + item.Text + '</span>';
                 fragment.appendChild(label);
             }
             container.innerHTML = "";
             container.appendChild(fragment);
-            container.addEventListener(
-                "change",
-                (e) => {
-                    if (e.target.type === "checkbox") updateList(document.getElementById(textFieldId), container);
-                },
-                {passive: true}
-            );
         }
 
-        async function populateLibraries() {
-            const response = await getJson("Library/VirtualFolders");
+        async function populateLibraries(config) {
+            const response = await window.ApiClient.getVirtualFolders();
             const tvLibraries = response.filter((item) => item.CollectionType === undefined || item.CollectionType === "tvshows" || item.CollectionType === "movies");
-            const libraryNames = tvLibraries.map((lib) => lib.Name || "Unnamed Library");
-            generateCheckboxList(libraryNames, "librarySubtitlesCheckboxes", "SelectedSubtitlesLibraries");
-            generateCheckboxList(libraryNames, "libraryAttachmentsCheckboxes", "SelectedAttachmentsLibraries");
-        }
-
-        async function getJson(url) {
-            return await fetchWithAuth(url, "GET")
-                .then((r) => {
-                    if (r.ok) {
-                        return r.json();
-                    } else {
-                        return null;
-                    }
-                })
-                .catch((err) => {
-                    console.debug(err);
-                });
-        }
-
-        // make an authenticated fetch to the server
-        async function fetchWithAuth(url, method, body) {
-            url = ApiClient.serverAddress() + "/" + url;
-
-            const reqInit = {
-                method: method,
-                headers: {
-                    Authorization: "MediaBrowser Token=" + ApiClient.accessToken(),
-                },
-                body: body,
-            };
-
-            if (method === "POST") {
-                reqInit.headers["Content-Type"] = "application/json";
-            }
-
-            return await fetch(url, reqInit);
+            const libraryNames = tvLibraries.map(lib => ({ Value: lib.Name, Text: lib.Name }));
+            generateCheckboxList(libraryNames, config.SelectedSubtitlesLibraries, "librarySubtitlesCheckboxes");
+            generateCheckboxList(libraryNames, config.SelectedAttachmentsLibraries, "libraryAttachmentsCheckboxes");
         }
 
         function toggleMode(isAdvanced) {
@@ -188,11 +135,8 @@
                     page.querySelector('#chkTextSubtitles').checked = !!config.IncludeTextSubtitles;
                     page.querySelector('#chkGraphicalSubtitles').checked = !!config.IncludeGraphicalSubtitles;
                     page.querySelector('#chkAdvancedMode').checked = !!config.IsAdvancedMode;
-                    document.querySelector("#SelectedSubtitlesLibraries").value = config.SelectedSubtitlesLibraries;
-                    document.querySelector("#SelectedAttachmentsLibraries").value = config.SelectedAttachmentsLibraries;
-                    document.querySelector("#SelectedCodecs").value = config.SelectedCodecs;
 
-                    generateCheckboxList(config.AllSubtitleCodecs.split('#'), "includedCodecsCheckboxes", "SelectedCodecs");
+                    generateCheckboxList(config.AllSubtitleCodecs, config.SelectedCodecs, "includedCodecsCheckboxes");
 
                     const isAdvanced = config.IsAdvancedMode === true;
                     toggleMode(isAdvanced);
@@ -212,9 +156,9 @@
                     config.IncludeTextSubtitles = form.querySelector('#chkTextSubtitles').checked;
                     config.IncludeGraphicalSubtitles = form.querySelector('#chkGraphicalSubtitles').checked;
                     config.IsAdvancedMode = form.querySelector('#chkAdvancedMode').checked;
-                    config.SelectedSubtitlesLibraries = document.querySelector("#SelectedSubtitlesLibraries").value;
-                    config.SelectedAttachmentsLibraries = document.querySelector("#SelectedAttachmentsLibraries").value;
-                    config.SelectedCodecs = document.querySelector("#SelectedCodecs").value;
+                    config.SelectedSubtitlesLibraries = getChecked('librarySubtitlesCheckboxes');
+                    config.SelectedAttachmentsLibraries = getChecked('libraryAttachmentsCheckboxes');
+                    config.SelectedCodecs = getChecked('includedCodecsCheckboxes');
 
                     ApiClient.updatePluginConfiguration(pluginId, config).then(Dashboard.processPluginConfigurationUpdateResult);
                 });
@@ -228,6 +172,19 @@
             const isAdvanced = e.target.checked;
             toggleMode(isAdvanced);
         });
+
+        function getChecked(wrapperId)
+        {
+            const nodes = document.getElementById(wrapperId).querySelectorAll('input:checked');
+            let values = [];
+
+            for (const node of nodes)
+            {
+                values.push(node.value);
+            }
+
+            return values;
+        }
     </script>
 </div>
 </body>
