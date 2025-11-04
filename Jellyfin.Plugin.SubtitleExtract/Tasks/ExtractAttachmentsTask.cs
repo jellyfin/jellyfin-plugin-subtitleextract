@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Jellyfin.Data.Enums;
+using Jellyfin.Extensions;
 using MediaBrowser.Controller.Dto;
 using MediaBrowser.Controller.Entities;
 using MediaBrowser.Controller.Library;
@@ -67,6 +68,47 @@ public class ExtractAttachmentsTask : IScheduledTask
     /// <inheritdoc />
     public async Task ExecuteAsync(IProgress<double> progress, CancellationToken cancellationToken)
     {
+        var startProgress = 0d;
+
+        var config = SubtitleExtractPlugin.Current.Configuration;
+        var libs = config.SelectedAttachmentsLibraries;
+
+        Guid[] parentIds = [];
+        if (libs.Length > 0)
+        {
+            // Try to get parent ids from the selected libraries
+            parentIds = _libraryManager.GetVirtualFolders()
+                .Where(vf => libs.Contains(vf.Name))
+                .Select(vf => Guid.Parse(vf.ItemId))
+                .ToArray();
+        }
+
+        if (parentIds.Length > 0)
+        {
+            // In case parent ids are found, run the extraction on each found library
+            foreach (var parentId in parentIds)
+            {
+                startProgress = await RunExtractionWithProgress(progress, parentId, parentIds, startProgress, cancellationToken).ConfigureAwait(false);
+            }
+        }
+        else
+        {
+            // Otherwise run it on everything
+            await RunExtractionWithProgress(progress, null, [], startProgress, cancellationToken).ConfigureAwait(false);
+        }
+
+        progress.Report(100);
+    }
+
+    private async Task<double> RunExtractionWithProgress(
+        IProgress<double> progress,
+        Guid? parentId,
+        IReadOnlyCollection<Guid> parentIds,
+        double startProgress,
+        CancellationToken cancellationToken)
+    {
+        var libsCount = parentIds.Count > 0 ? parentIds.Count : 1;
+
         var query = new InternalItemsQuery
         {
             Recursive = true,
@@ -78,6 +120,11 @@ public class ExtractAttachmentsTask : IScheduledTask
             SourceTypes = _sourceTypes,
             Limit = QueryPageLimit,
         };
+
+        if (!parentId.IsNullOrEmpty())
+        {
+            query.ParentId = parentId.Value;
+        }
 
         var numberOfVideos = _libraryManager.GetCount(query);
 
@@ -113,12 +160,16 @@ public class ExtractAttachmentsTask : IScheduledTask
                 }
 
                 completedVideos++;
-                progress.Report(100d * completedVideos / numberOfVideos);
+
+                // Report the progress using "startProgress" that allows to track progress across multiple libraries
+                progress.Report(startProgress + (100d * completedVideos / numberOfVideos / libsCount));
             }
 
             startIndex += QueryPageLimit;
         }
 
-        progress.Report(100);
+        // When done, update the startProgress to the current progress for next libraries
+        startProgress += 100d * completedVideos / numberOfVideos / libsCount;
+        return startProgress;
     }
 }
