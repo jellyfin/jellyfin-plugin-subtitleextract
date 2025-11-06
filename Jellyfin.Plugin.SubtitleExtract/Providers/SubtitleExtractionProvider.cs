@@ -51,7 +51,7 @@ public class SubtitleExtractionProvider : ICustomMetadataProvider<Episode>,
         if (item.IsFileProtocol)
         {
             var file = directoryService.GetFile(item.Path);
-            if (file != null && (item.DateModified != file.LastWriteTimeUtc || item.Size != file.Length))
+            if (file is not null && item.HasChanged(file.LastWriteTimeUtc))
             {
                 return true;
             }
@@ -81,7 +81,6 @@ public class SubtitleExtractionProvider : ICustomMetadataProvider<Episode>,
     private async Task<ItemUpdateType> FetchSubtitles(BaseItem item, CancellationToken cancellationToken)
     {
         var config = SubtitleExtractPlugin.Current!.Configuration;
-
         if (config.ExtractionDuringLibraryScan)
         {
             _logger.LogDebug("Extracting subtitles for: {Video}", item.Path);
