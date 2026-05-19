@@ -87,7 +87,14 @@ public class SubtitleExtractionProvider : ICustomMetadataProvider<Episode>,
 
             foreach (var mediaSource in item.GetMediaSources(false))
             {
-                await _encoder.ExtractAllExtractableSubtitles(mediaSource, cancellationToken).ConfigureAwait(false);
+                if (!config.PlaceSubtitlesToMediaFolder)
+                {
+                    await _encoder.ExtractAllExtractableSubtitles(mediaSource, cancellationToken).ConfigureAwait(false);
+                }
+                else
+                {
+                    await _encoder.ExtractAllExtractableSubtitlesLocal(mediaSource, cancellationToken).ConfigureAwait(false);
+                }
             }
 
             _logger.LogDebug("Finished subtitle extraction for: {Video}", item.Path);

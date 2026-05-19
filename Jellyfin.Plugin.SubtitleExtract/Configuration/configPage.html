@@ -10,14 +10,22 @@
         <div class="content-primary">
 
             <form class="extractorConfigurationForm">
-                <br/>
+                <br />
 
                 <div class="checkboxContainer checkboxContainer-withDescription">
                     <label>
-                        <input is="emby-checkbox" type="checkbox" id="chkEnableDuringScan"/>
+                        <input is="emby-checkbox" type="checkbox" id="chkEnableDuringScan" />
                         <span>Extract subtitles and attachments during library scan</span>
                     </label>
                     <div class="fieldDescription checkboxFieldDescription">This will make sure subtitles and attachments are extracted sooner but will result in longer library scans. Does not disable the scheduled task.</div>
+                </div>
+
+                <div class="checkboxContainer checkboxContainer-withDescription">
+                    <label>
+                        <input is="emby-checkbox" type="checkbox" id="chkPlaceToMediaFolder" />
+                        <span>Place subtitles to media folder</span>
+                    </label>
+                    <div class="fieldDescription checkboxFieldDescription">Place subtitles to media folder.</div>
                 </div>
 
                 <div class="folderAccessListContainer" style="margin-bottom: -1em;">
@@ -39,7 +47,7 @@
                     <h3 class="checkboxListLabel">Subtitle Types to Extract</h3>
                     <div class="checkboxContainer checkboxContainer-withDescription">
                         <label>
-                            <input is="emby-checkbox" type="checkbox" id="chkTextSubtitles"/>
+                            <input is="emby-checkbox" type="checkbox" id="chkTextSubtitles" />
                             <span>Text Subtitles</span>
                         </label>
                         <div class="fieldDescription checkboxFieldDescription">Includes: SRT, ASS/SSA, WebVTT, and other text-based subtitle formats. It will extract subtitles from medias containing only text subtitles.</div>
@@ -47,7 +55,7 @@
 
                     <div class="checkboxContainer checkboxContainer-withDescription">
                         <label>
-                            <input is="emby-checkbox" type="checkbox" id="chkGraphicalSubtitles"/>
+                            <input is="emby-checkbox" type="checkbox" id="chkGraphicalSubtitles" />
                             <span>Graphical Subtitles</span>
                         </label>
                         <div class="fieldDescription checkboxFieldDescription">Includes: DVD subtitles (VOBSUB), Blu-ray subtitles (PGS), and other image-based formats. It will extract subtitles from medias containing at least one graphical subtitle.</div>
@@ -57,7 +65,7 @@
                 <!-- Advanced Mode Toggle -->
                 <div class="checkboxContainer checkboxContainer-withDescription" style="margin-top: 1.5em;">
                     <label>
-                        <input is="emby-checkbox" type="checkbox" id="chkAdvancedMode"/>
+                        <input is="emby-checkbox" type="checkbox" id="chkAdvancedMode" />
                         <span>Advanced Mode</span>
                     </label>
                     <div class="fieldDescription checkboxFieldDescription">Enable advanced codec selection for fine-grained control</div>
@@ -75,7 +83,7 @@
                     </div>
                 </details>
 
-                <br/>
+                <br />
                 <div>
                     <button is="emby-button" type="submit" class="raised button-submit block emby-button"><span>Save</span></button>
                 </div>
@@ -135,6 +143,7 @@
                     page.querySelector('#chkTextSubtitles').checked = !!config.IncludeTextSubtitles;
                     page.querySelector('#chkGraphicalSubtitles').checked = !!config.IncludeGraphicalSubtitles;
                     page.querySelector('#chkAdvancedMode').checked = !!config.IsAdvancedMode;
+                    page.querySelector('#chkPlaceToMediaFolder').checked = !!config.PlaceSubtitlesToMediaFolder;
 
                     generateCheckboxList(config.AllSubtitleCodecs, config.SelectedCodecs, "includedCodecsCheckboxes");
 
@@ -159,6 +168,7 @@
                     config.SelectedSubtitlesLibraries = getChecked('librarySubtitlesCheckboxes');
                     config.SelectedAttachmentsLibraries = getChecked('libraryAttachmentsCheckboxes');
                     config.SelectedCodecs = getChecked('includedCodecsCheckboxes');
+                    config.PlaceSubtitlesToMediaFolder = form.querySelector('#chkPlaceToMediaFolder').checked;
 
                     ApiClient.updatePluginConfiguration(pluginId, config).then(Dashboard.processPluginConfigurationUpdateResult);
                 });

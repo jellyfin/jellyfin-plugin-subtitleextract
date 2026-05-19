@@ -129,6 +129,7 @@ public class ExtractSubtitlesTask : IScheduledTask
         var isAdvancedCodecSelection = config.IsAdvancedMode;
         var includeTextSubtitles = config.IncludeTextSubtitles;
         var includeGraphicalSubtitles = config.IncludeGraphicalSubtitles;
+        var placeToMediaFolder = config.PlaceSubtitlesToMediaFolder;
 
         if (!parentId.IsNullOrEmpty())
         {
@@ -151,7 +152,14 @@ public class ExtractSubtitlesTask : IScheduledTask
 
                 foreach (var mediaSource in video.GetMediaSources(false).Where(source => FilterMediasWithCodec(isAdvancedCodecSelection, includeTextSubtitles, includeGraphicalSubtitles, selectedCodecs, source)))
                 {
-                    await _encoder.ExtractAllExtractableSubtitles(mediaSource, cancellationToken).ConfigureAwait(false);
+                    if (placeToMediaFolder)
+                    {
+                        await _encoder.ExtractAllExtractableSubtitles(mediaSource, cancellationToken).ConfigureAwait(false);
+                    }
+                    else
+                    {
+                        await _encoder.ExtractAllExtractableSubtitlesLocal(mediaSource, cancellationToken).ConfigureAwait(false);
+                    }
                 }
 
                 completedVideos++;
