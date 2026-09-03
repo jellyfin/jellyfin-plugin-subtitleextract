@@ -5,9 +5,9 @@ version: 7
 targetAbi: "10.11.2.0"
 framework: "net9.0"
 owner: "jellyfin"
-overview: "Extracts Subtitles."
+overview: "Extracts subtitles proactively."
 description: >
-  Extracts embedded subtitles.
+  Extracts embedded subtitles proactively.
 
 category: "Subtitles"
 artifacts:

@@ -55,7 +55,7 @@ public class ExtractSubtitlesTask : IScheduledTask
     public string Name => "Extract Subtitles";
 
     /// <inheritdoc />
-    public string Description => "Extracts embedded subtitles.";
+    public string Description => "Extracts embedded subtitles proactively.";
 
     /// <inheritdoc />
     public string Category => _localization.GetLocalizedString("TasksLibraryCategory");

@@ -18,7 +18,7 @@
 
 ## About
 
-Plugin to automatically extract embedded subtitles.
+Plugin to automatically extract embedded subtitles proactively outside of playing media. It allows optional subtitle extraction during library scans, or as a scheduled task.
 
 ## Installation
 
