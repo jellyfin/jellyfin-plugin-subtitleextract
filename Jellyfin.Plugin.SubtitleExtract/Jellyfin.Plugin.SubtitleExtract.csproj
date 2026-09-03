@@ -10,6 +10,7 @@
 
   <ItemGroup>
     <PackageReference Include="Jellyfin.Controller" Version="10.*-*" />
+    <PackageReference Include="DynamicExpresso.Core" Version="2.*" />
   </ItemGroup>
 
   <ItemGroup>

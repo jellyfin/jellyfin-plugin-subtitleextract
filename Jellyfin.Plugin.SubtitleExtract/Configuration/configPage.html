@@ -2,6 +2,53 @@
 <html>
 <head>
     <title>Jellyfin Subtitle Extractor</title>
+    <style>
+        .checkbox-grid {
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            gap: 0.25em 0.5em;
+            padding: 0.5em 1em;
+        }
+        .checkbox-grid label {
+            display: flex;
+            align-items: center;
+            gap: 0.3em;
+            font-size: 0.9em;
+            white-space: nowrap;
+        }
+        .checkbox-grid-container {
+            margin-bottom: 1em;
+        }
+        .checkbox-grid-container.disabled {
+            opacity: 0.4;
+            pointer-events: none;
+        }
+        .master-checkbox {
+            margin-bottom: 0.5em;
+        }
+        .section-header {
+            margin-top: 1.5em;
+            margin-bottom: 0.5em;
+            border-bottom: 1px solid rgba(155, 155, 155, 0.3);
+            padding-bottom: 0.3em;
+        }
+        .regex-section {
+            margin-top: 1em;
+        }
+        .regex-section .inputContainer {
+            margin-bottom: 1em;
+        }
+        .regex-section input[type="text"] {
+            width: 100%;
+            font-family: monospace;
+        }
+        .worker-section {
+            margin-top: 1em;
+        }
+        .worker-section input[type="number"] {
+            width: 80px;
+        }
+    </style>
 </head>
 <body>
 <div data-role="page" class="page type-interior pluginConfigurationPage subsExtractorConfigurationPage" data-require="emby-input,emby-button,emby-select,emby-checkbox,emby-linkbutton">
@@ -34,46 +81,95 @@
                     </div>
                 </div>
 
-                <!-- Easy Mode Section -->
-                <div id="easyModeSection">
-                    <h3 class="checkboxListLabel">Subtitle Types to Extract</h3>
-                    <div class="checkboxContainer checkboxContainer-withDescription">
-                        <label>
-                            <input is="emby-checkbox" type="checkbox" id="chkTextSubtitles"/>
-                            <span>Text Subtitles</span>
-                        </label>
-                        <div class="fieldDescription checkboxFieldDescription">Includes: SRT, ASS/SSA, WebVTT, and other text-based subtitle formats. It will extract subtitles from medias containing only text subtitles.</div>
-                    </div>
-
-                    <div class="checkboxContainer checkboxContainer-withDescription">
-                        <label>
-                            <input is="emby-checkbox" type="checkbox" id="chkGraphicalSubtitles"/>
-                            <span>Graphical Subtitles</span>
-                        </label>
-                        <div class="fieldDescription checkboxFieldDescription">Includes: DVD subtitles (VOBSUB), Blu-ray subtitles (PGS), and other image-based formats. It will extract subtitles from medias containing at least one graphical subtitle.</div>
-                    </div>
-                </div>
-
-                <!-- Advanced Mode Toggle -->
-                <div class="checkboxContainer checkboxContainer-withDescription" style="margin-top: 1.5em;">
+                <!-- Languages Section -->
+                <h3 class="section-header">Subtitle Languages</h3>
+                <div class="master-checkbox">
                     <label>
-                        <input is="emby-checkbox" type="checkbox" id="chkAdvancedMode"/>
-                        <span>Advanced Mode</span>
+                        <input is="emby-checkbox" type="checkbox" id="chkExtractAllLanguages"/>
+                        <span>Extract all languages</span>
                     </label>
-                    <div class="fieldDescription checkboxFieldDescription">Enable advanced codec selection for fine-grained control</div>
+                    <div class="fieldDescription checkboxFieldDescription">When enabled, subtitles in all languages will be extracted. Disable to select specific languages below.</div>
+                </div>
+                <div class="checkbox-grid-container" id="languageGridContainer">
+                    <div class="checkbox-grid" id="languageCheckboxes"></div>
                 </div>
 
-                <details id="codecsDetails">
-                    <summary style="cursor: pointer; padding: 10px; width: inherit; margin: auto; border: none; text-align: center; font-size: 1em; outline: 2px solid rgba(155, 155, 155, 0.5);">
-                        Codecs to include in extraction
-                    </summary>
-                    <div class="folderAccessListContainer" style="margin-bottom: -1em;">
-                        <div class="folderAccess">
-                            <h3 class="checkboxListLabel">Limit subtitle extraction to media with all subtitle streams matching the selected codecs.</h3>
-                            <div class="checkboxList paperList" style="padding: 0.5em 1em;" id="includedCodecsCheckboxes"></div>
-                        </div>
+                <!-- Subtitle Types Section -->
+                <h3 class="section-header">Subtitle Types</h3>
+                <div class="master-checkbox">
+                    <label>
+                        <input is="emby-checkbox" type="checkbox" id="chkExtractAllCodecTypes"/>
+                        <span>Extract all subtitle types</span>
+                    </label>
+                    <div class="fieldDescription checkboxFieldDescription">When enabled, all subtitle formats will be extracted. Disable to select specific types below.</div>
+                </div>
+                <div class="checkbox-grid-container" id="codecGridContainer">
+                    <div class="checkbox-grid" id="codecCheckboxes"></div>
+                </div>
+
+                <!-- Regex Filters Section -->
+                <h3 class="section-header">Title Regex Filters</h3>
+                <div class="regex-section">
+                    <div class="inputContainer">
+                        <label class="inputLabel" for="txtAcceptRegex">Accept Pattern (only extract subtitles whose title matches this regex)</label>
+                        <input is="emby-input" type="text" id="txtAcceptRegex" placeholder="e.g. ^English|^Commentary"/>
+                        <div class="fieldDescription">Leave empty to accept all. Only subtitles with titles matching this pattern will be extracted.</div>
                     </div>
-                </details>
+                    <div class="inputContainer">
+                        <label class="inputLabel" for="txtRejectRegex">Reject Pattern (skip subtitles whose title matches this regex)</label>
+                        <input is="emby-input" type="text" id="txtRejectRegex" placeholder="e.g. Signs|Songs|Forced"/>
+                        <div class="fieldDescription">Leave empty to reject none. Subtitles with titles matching this pattern will be skipped. <strong>Rejection takes precedence over acceptance.</strong></div>
+                    </div>
+                </div>
+
+                <!-- Override Expressions Section -->
+                <h3 class="section-header">Override Expressions</h3>
+                <div class="fieldDescription" style="margin-bottom: 1em;">
+                    Boolean expressions using C# syntax that override the normal filters above. Available variables:
+                    <strong>LANGUAGE</strong> (e.g. "eng", "jpn", "und"),
+                    <strong>TYPE</strong> (e.g. "subrip", "ass", "PGSSUB"),
+                    <strong>TITLE</strong> (the subtitle track title).
+                    You can use standard C# string methods and operators: <code>==</code>, <code>!=</code>, <code>&&</code>, <code>||</code>, <code>!</code>,
+                    <code>.Contains()</code>, <code>.StartsWith()</code>, <code>.EndsWith()</code>.
+                </div>
+
+                <div style="margin-bottom: 1.5em;">
+                    <div class="checkboxContainer" style="margin-bottom: 0.5em;">
+                        <label>
+                            <input is="emby-checkbox" type="checkbox" id="chkAcceptOverride"/>
+                            <span>Enable Accept Override</span>
+                        </label>
+                        <div class="fieldDescription checkboxFieldDescription">When enabled, subtitles matching this expression are <strong>always extracted</strong>, bypassing all other filters.</div>
+                    </div>
+                    <div id="acceptOverrideContainer">
+                        <textarea is="emby-input" id="txtAcceptOverride" rows="3" style="width: 100%; font-family: monospace; resize: vertical;"
+                            placeholder='e.g. LANGUAGE == "eng" && TYPE == "subrip"'></textarea>
+                    </div>
+                </div>
+
+                <div style="margin-bottom: 1.5em;">
+                    <div class="checkboxContainer" style="margin-bottom: 0.5em;">
+                        <label>
+                            <input is="emby-checkbox" type="checkbox" id="chkRejectOverride"/>
+                            <span>Enable Reject Override</span>
+                        </label>
+                        <div class="fieldDescription checkboxFieldDescription">When enabled, subtitles matching this expression are <strong>always skipped</strong>, regardless of all other filters. Takes precedence over accept override.</div>
+                    </div>
+                    <div id="rejectOverrideContainer">
+                        <textarea is="emby-input" id="txtRejectOverride" rows="3" style="width: 100%; font-family: monospace; resize: vertical;"
+                            placeholder='e.g. TITLE.Contains("Signs") || TITLE.Contains("Songs")'></textarea>
+                    </div>
+                </div>
+
+                <!-- Worker Threads Section -->
+                <h3 class="section-header">Performance</h3>
+                <div class="worker-section">
+                    <div class="inputContainer">
+                        <label class="inputLabel" for="txtWorkerThreads">Worker Threads</label>
+                        <input is="emby-input" type="number" id="txtWorkerThreads" min="1" max="32" step="1"/>
+                        <div class="fieldDescription">Number of parallel worker threads for subtitle extraction tasks. Default: 1.</div>
+                    </div>
+                </div>
 
                 <br/>
                 <div>
@@ -97,6 +193,18 @@
             container.appendChild(fragment);
         }
 
+        function generateCheckboxGrid(items, selectedItems, containerId) {
+            const container = document.getElementById(containerId);
+            const fragment = document.createDocumentFragment();
+            for (const item of items) {
+                const label = document.createElement("label");
+                label.innerHTML = '<input type="checkbox" is="emby-checkbox"' + (selectedItems.includes(item.Value) ? " checked" : "") + ' value="' + item.Value + '"><span>' + item.Text + '</span>';
+                fragment.appendChild(label);
+            }
+            container.innerHTML = "";
+            container.appendChild(fragment);
+        }
+
         async function populateLibraries(config) {
             const response = await window.ApiClient.getVirtualFolders();
             const tvLibraries = response.filter((item) => item.CollectionType === undefined || item.CollectionType === "tvshows" || item.CollectionType === "movies");
@@ -105,17 +213,33 @@
             generateCheckboxList(libraryNames, config.SelectedAttachmentsLibraries, "libraryAttachmentsCheckboxes");
         }
 
-        function toggleMode(isAdvanced) {
-            const easyModeSection = document.getElementById('easyModeSection');
-            const codecsDetails = document.getElementById('codecsDetails');
-
-            if (isAdvanced) {
-                easyModeSection.style.display = 'none';
-                codecsDetails.style.display = 'block';
+        function updateOverrideState(checkboxId, containerId) {
+            const chk = document.getElementById(checkboxId);
+            const container = document.getElementById(containerId);
+            if (chk.checked) {
+                container.classList.remove('disabled');
             } else {
-                easyModeSection.style.display = 'block';
-                codecsDetails.style.display = 'none';
+                container.classList.add('disabled');
             }
+        }
+
+        function updateGridState(masterCheckboxId, gridContainerId) {
+            const master = document.getElementById(masterCheckboxId);
+            const container = document.getElementById(gridContainerId);
+            if (master.checked) {
+                container.classList.add('disabled');
+            } else {
+                container.classList.remove('disabled');
+            }
+        }
+
+        function getChecked(wrapperId) {
+            const nodes = document.getElementById(wrapperId).querySelectorAll('input:checked');
+            let values = [];
+            for (const node of nodes) {
+                values.push(node.value);
+            }
+            return values;
         }
 
         (function () {
@@ -132,14 +256,31 @@
                     populateLibraries(config);
 
                     page.querySelector('#chkEnableDuringScan').checked = !!config.ExtractionDuringLibraryScan;
-                    page.querySelector('#chkTextSubtitles').checked = !!config.IncludeTextSubtitles;
-                    page.querySelector('#chkGraphicalSubtitles').checked = !!config.IncludeGraphicalSubtitles;
-                    page.querySelector('#chkAdvancedMode').checked = !!config.IsAdvancedMode;
 
-                    generateCheckboxList(config.AllSubtitleCodecs, config.SelectedCodecs, "includedCodecsCheckboxes");
+                    // Language settings
+                    page.querySelector('#chkExtractAllLanguages').checked = config.ExtractAllLanguages !== false;
+                    generateCheckboxGrid(config.AllLanguages, config.SelectedLanguages || [], "languageCheckboxes");
+                    updateGridState('chkExtractAllLanguages', 'languageGridContainer');
 
-                    const isAdvanced = config.IsAdvancedMode === true;
-                    toggleMode(isAdvanced);
+                    // Codec type settings
+                    page.querySelector('#chkExtractAllCodecTypes').checked = config.ExtractAllCodecTypes !== false;
+                    generateCheckboxGrid(config.AllSubtitleCodecs, config.SelectedCodecTypes || [], "codecCheckboxes");
+                    updateGridState('chkExtractAllCodecTypes', 'codecGridContainer');
+
+                    // Regex settings
+                    page.querySelector('#txtAcceptRegex').value = config.AcceptTitleRegex || '';
+                    page.querySelector('#txtRejectRegex').value = config.RejectTitleRegex || '';
+
+                    // Override expressions
+                    page.querySelector('#chkAcceptOverride').checked = !!config.AcceptOverrideEnabled;
+                    page.querySelector('#txtAcceptOverride').value = config.AcceptOverrideExpression || '';
+                    page.querySelector('#chkRejectOverride').checked = !!config.RejectOverrideEnabled;
+                    page.querySelector('#txtRejectOverride').value = config.RejectOverrideExpression || '';
+                    updateOverrideState('chkAcceptOverride', 'acceptOverrideContainer');
+                    updateOverrideState('chkRejectOverride', 'rejectOverrideContainer');
+
+                    // Worker threads
+                    page.querySelector('#txtWorkerThreads').value = config.WorkerThreads || 1;
 
                     Dashboard.hideLoadingMsg();
                 });
@@ -153,12 +294,30 @@
 
                 ApiClient.getPluginConfiguration(pluginId).then(function (config) {
                     config.ExtractionDuringLibraryScan = form.querySelector('#chkEnableDuringScan').checked;
-                    config.IncludeTextSubtitles = form.querySelector('#chkTextSubtitles').checked;
-                    config.IncludeGraphicalSubtitles = form.querySelector('#chkGraphicalSubtitles').checked;
-                    config.IsAdvancedMode = form.querySelector('#chkAdvancedMode').checked;
                     config.SelectedSubtitlesLibraries = getChecked('librarySubtitlesCheckboxes');
                     config.SelectedAttachmentsLibraries = getChecked('libraryAttachmentsCheckboxes');
-                    config.SelectedCodecs = getChecked('includedCodecsCheckboxes');
+
+                    // Language settings
+                    config.ExtractAllLanguages = form.querySelector('#chkExtractAllLanguages').checked;
+                    config.SelectedLanguages = getChecked('languageCheckboxes');
+
+                    // Codec type settings
+                    config.ExtractAllCodecTypes = form.querySelector('#chkExtractAllCodecTypes').checked;
+                    config.SelectedCodecTypes = getChecked('codecCheckboxes');
+
+                    // Regex settings
+                    config.AcceptTitleRegex = form.querySelector('#txtAcceptRegex').value.trim();
+                    config.RejectTitleRegex = form.querySelector('#txtRejectRegex').value.trim();
+
+                    // Override expressions
+                    config.AcceptOverrideEnabled = form.querySelector('#chkAcceptOverride').checked;
+                    config.AcceptOverrideExpression = form.querySelector('#txtAcceptOverride').value;
+                    config.RejectOverrideEnabled = form.querySelector('#chkRejectOverride').checked;
+                    config.RejectOverrideExpression = form.querySelector('#txtRejectOverride').value;
+
+                    // Worker threads
+                    var threads = parseInt(form.querySelector('#txtWorkerThreads').value, 10);
+                    config.WorkerThreads = isNaN(threads) || threads < 1 ? 1 : Math.min(threads, 32);
 
                     ApiClient.updatePluginConfiguration(pluginId, config).then(Dashboard.processPluginConfigurationUpdateResult);
                 });
@@ -168,23 +327,21 @@
 
         })();
 
-        document.querySelector('#chkAdvancedMode').addEventListener('change', function (e) {
-            const isAdvanced = e.target.checked;
-            toggleMode(isAdvanced);
+        document.querySelector('#chkExtractAllLanguages').addEventListener('change', function () {
+            updateGridState('chkExtractAllLanguages', 'languageGridContainer');
         });
 
-        function getChecked(wrapperId)
-        {
-            const nodes = document.getElementById(wrapperId).querySelectorAll('input:checked');
-            let values = [];
+        document.querySelector('#chkExtractAllCodecTypes').addEventListener('change', function () {
+            updateGridState('chkExtractAllCodecTypes', 'codecGridContainer');
+        });
 
-            for (const node of nodes)
-            {
-                values.push(node.value);
-            }
+        document.querySelector('#chkAcceptOverride').addEventListener('change', function () {
+            updateOverrideState('chkAcceptOverride', 'acceptOverrideContainer');
+        });
 
-            return values;
-        }
+        document.querySelector('#chkRejectOverride').addEventListener('change', function () {
+            updateOverrideState('chkRejectOverride', 'rejectOverrideContainer');
+        });
     </script>
 </div>
 </body>
