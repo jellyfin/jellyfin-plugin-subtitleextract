@@ -80,5 +80,5 @@ public class PluginConfiguration : BasePluginConfiguration
     /// <summary>
     /// Gets or sets a value indicating whether advanced codec selection mode is enabled.
     /// </summary>
-    public bool IncludeGraphicalSubtitles { get; set; } = true;
+    public bool IncludeGraphicalSubtitles { get; set; } = false;
 }
