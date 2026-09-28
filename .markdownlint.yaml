@@ -1,0 +1,9 @@
+# Allow the HTML used for the centered README header
+MD033:
+  allowed_elements:
+    - h1
+    - h3
+    - p
+    - a
+    - img
+    - br
