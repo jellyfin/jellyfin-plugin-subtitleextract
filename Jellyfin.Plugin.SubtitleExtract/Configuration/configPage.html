@@ -17,7 +17,7 @@
                         <input is="emby-checkbox" type="checkbox" id="chkEnableDuringScan"/>
                         <span>Extract subtitles and attachments during library scan</span>
                     </label>
-                    <div class="fieldDescription checkboxFieldDescription">This will make sure subtitles and attachments are extracted sooner but will result in longer library scans. Does not disable the scheduled task.</div>
+                    <div class="fieldDescription checkboxFieldDescription">This will make sure subtitles and attachments are extracted sooner but will result in longer library scans. The library and subtitle type selections below apply to library scans as well. Does not disable the scheduled tasks.</div>
                 </div>
 
                 <div class="folderAccessListContainer" style="margin-bottom: -1em;">
@@ -42,7 +42,7 @@
                             <input is="emby-checkbox" type="checkbox" id="chkTextSubtitles"/>
                             <span>Text Subtitles</span>
                         </label>
-                        <div class="fieldDescription checkboxFieldDescription">Includes: SRT, ASS/SSA, WebVTT, and other text-based subtitle formats. It will extract subtitles from medias containing only text subtitles.</div>
+                        <div class="fieldDescription checkboxFieldDescription">Includes: SRT, ASS/SSA, WebVTT, and other text-based subtitle formats. Only the text subtitle streams of a media are extracted.</div>
                     </div>
 
                     <div class="checkboxContainer checkboxContainer-withDescription">
@@ -50,7 +50,7 @@
                             <input is="emby-checkbox" type="checkbox" id="chkGraphicalSubtitles"/>
                             <span>Graphical Subtitles</span>
                         </label>
-                        <div class="fieldDescription checkboxFieldDescription">Includes: DVD subtitles (VOBSUB), Blu-ray subtitles (PGS), and other image-based formats. It will extract subtitles from medias containing at least one graphical subtitle.</div>
+                        <div class="fieldDescription checkboxFieldDescription">Includes: DVD subtitles (VOBSUB), Blu-ray subtitles (PGS), and other image-based formats. Only the graphical subtitle streams of a media are extracted.</div>
                     </div>
                 </div>
 
@@ -69,7 +69,7 @@
                     </summary>
                     <div class="folderAccessListContainer" style="margin-bottom: -1em;">
                         <div class="folderAccess">
-                            <h3 class="checkboxListLabel">Limit subtitle extraction to media with all subtitle streams matching the selected codecs.</h3>
+                            <h3 class="checkboxListLabel">Only extract subtitle streams using one of the selected codecs. Other subtitle streams of the same media are skipped and will still be extracted on demand during playback.</h3>
                             <div class="checkboxList paperList" style="padding: 0.5em 1em;" id="includedCodecsCheckboxes"></div>
                         </div>
                     </div>
