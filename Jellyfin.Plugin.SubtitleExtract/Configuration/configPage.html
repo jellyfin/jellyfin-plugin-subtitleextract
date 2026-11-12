@@ -4,7 +4,7 @@
     <title>Jellyfin Subtitle Extractor</title>
 </head>
 <body>
-<div data-role="page" class="page type-interior pluginConfigurationPage subsExtractorConfigurationPage" data-require="emby-input,emby-button,emby-select,emby-checkbox,emby-linkbutton">
+<div data-role="page" class="page type-interior pluginConfigurationPage subsExtractorConfigurationPage" data-require="emby-input,emby-button,emby-select,emby-checkbox,emby-linkbutton" data-controller="__plugin/subtitleextractjs">
 
     <div data-role="content">
         <div class="content-primary">
@@ -83,109 +83,6 @@
         </div>
     </div>
 
-    <script type="text/javascript">
-        function generateCheckboxList(items, selectedItems, containerId) {
-            const container = document.getElementById(containerId);
-            const fragment = document.createDocumentFragment();
-            for (const item of items) {
-                const label = document.createElement("label");
-                label.className = "emby-checkbox-label";
-                label.innerHTML = '<input type="checkbox" is="emby-checkbox"' + (selectedItems.includes(item.Value) ? " checked" : "") + ' value="' + item.Value + '"><span class="checkboxLabel">' + item.Text + '</span>';
-                fragment.appendChild(label);
-            }
-            container.innerHTML = "";
-            container.appendChild(fragment);
-        }
-
-        async function populateLibraries(config) {
-            const response = await window.ApiClient.getVirtualFolders();
-            const tvLibraries = response.filter((item) => item.CollectionType === undefined || item.CollectionType === "tvshows" || item.CollectionType === "movies");
-            const libraryNames = tvLibraries.map(lib => ({ Value: lib.Name, Text: lib.Name }));
-            generateCheckboxList(libraryNames, config.SelectedSubtitlesLibraries, "librarySubtitlesCheckboxes");
-            generateCheckboxList(libraryNames, config.SelectedAttachmentsLibraries, "libraryAttachmentsCheckboxes");
-        }
-
-        function toggleMode(isAdvanced) {
-            const easyModeSection = document.getElementById('easyModeSection');
-            const codecsDetails = document.getElementById('codecsDetails');
-
-            if (isAdvanced) {
-                easyModeSection.style.display = 'none';
-                codecsDetails.style.display = 'block';
-            } else {
-                easyModeSection.style.display = 'block';
-                codecsDetails.style.display = 'none';
-            }
-        }
-
-        (function () {
-
-            var pluginId = "CD893C24-B59E-4060-87B2-184070E1BF68";
-
-            $('.subsExtractorConfigurationPage').on('pageshow', function (event) {
-
-                var page = this;
-
-                Dashboard.showLoadingMsg();
-
-                ApiClient.getPluginConfiguration(pluginId).then(function (config) {
-                    populateLibraries(config);
-
-                    page.querySelector('#chkEnableDuringScan').checked = !!config.ExtractionDuringLibraryScan;
-                    page.querySelector('#chkTextSubtitles').checked = !!config.IncludeTextSubtitles;
-                    page.querySelector('#chkGraphicalSubtitles').checked = !!config.IncludeGraphicalSubtitles;
-                    page.querySelector('#chkAdvancedMode').checked = !!config.IsAdvancedMode;
-
-                    generateCheckboxList(config.AllSubtitleCodecs, config.SelectedCodecs, "includedCodecsCheckboxes");
-
-                    const isAdvanced = config.IsAdvancedMode === true;
-                    toggleMode(isAdvanced);
-
-                    Dashboard.hideLoadingMsg();
-                });
-            });
-
-            $('.extractorConfigurationForm').off('submit.plugin').on('submit.plugin', function (e) {
-
-                Dashboard.showLoadingMsg();
-
-                var form = this;
-
-                ApiClient.getPluginConfiguration(pluginId).then(function (config) {
-                    config.ExtractionDuringLibraryScan = form.querySelector('#chkEnableDuringScan').checked;
-                    config.IncludeTextSubtitles = form.querySelector('#chkTextSubtitles').checked;
-                    config.IncludeGraphicalSubtitles = form.querySelector('#chkGraphicalSubtitles').checked;
-                    config.IsAdvancedMode = form.querySelector('#chkAdvancedMode').checked;
-                    config.SelectedSubtitlesLibraries = getChecked('librarySubtitlesCheckboxes');
-                    config.SelectedAttachmentsLibraries = getChecked('libraryAttachmentsCheckboxes');
-                    config.SelectedCodecs = getChecked('includedCodecsCheckboxes');
-
-                    ApiClient.updatePluginConfiguration(pluginId, config).then(Dashboard.processPluginConfigurationUpdateResult);
-                });
-
-                return false;
-            });
-
-        })();
-
-        document.querySelector('#chkAdvancedMode').addEventListener('change', function (e) {
-            const isAdvanced = e.target.checked;
-            toggleMode(isAdvanced);
-        });
-
-        function getChecked(wrapperId)
-        {
-            const nodes = document.getElementById(wrapperId).querySelectorAll('input:checked');
-            let values = [];
-
-            for (const node of nodes)
-            {
-                values.push(node.value);
-            }
-
-            return values;
-        }
-    </script>
 </div>
 </body>
 </html>

@@ -46,6 +46,11 @@ public class SubtitleExtractPlugin : BasePlugin<PluginConfiguration>, IHasWebPag
             {
                 Name = "Jellyfin subtitle and attachment extractor",
                 EmbeddedResourcePath = GetType().Namespace + ".Configuration.configPage.html"
+            },
+            new PluginPageInfo
+            {
+                Name = "subtitleextractjs",
+                EmbeddedResourcePath = GetType().Namespace + ".Configuration.configPage.js"
             }
         ];
     }
